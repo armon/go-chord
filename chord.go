@@ -141,7 +141,22 @@ func (r *Ring) Shutdown() error {
 }
 
 // Does a key lookup
-func (*Ring) Lookup(key []byte) (VnodeIterator, error) {
+func (r *Ring) Lookup(key []byte) (VnodeIterator, error) {
+	// Hash the key
+	h := r.config.HashFunc()
+	h.Write(key)
+	key_hash := h.Sum(nil)
+
+	// Find the nearest local vnode
+	nearest := r.nearestVnode(key_hash)
+
+	// Use the nearest node for the lookup
+	_, err := nearest.findSuccessor(key_hash)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: Iterator over results
 	return nil, nil
 }
 
