@@ -126,3 +126,21 @@ func TestBetween(t *testing.T) {
 		t.Fatalf("dont expect k between!")
 	}
 }
+
+func TestPowerOffset(t *testing.T) {
+	id := []byte{0, 0, 0, 0}
+	exp := 30
+	mod := 32
+	val := powerOffset(id, exp, mod)
+	if val[0] != 64 {
+		t.Fatalf("unexpected val! %v", val)
+	}
+
+	// 0-7, 8-15, 16-23, 24-31
+	id = []byte{0, 0xff, 0xff, 0xff}
+	exp = 23
+	val = powerOffset(id, exp, mod)
+	if val[0] != 1 || val[1] != 0x7f || val[2] != 0xff || val[3] != 0xff {
+		t.Fatalf("unexpected val! %v", val)
+	}
+}
