@@ -56,6 +56,7 @@ type localVnode struct {
 	ring        *Ring
 	successors  []*Vnode
 	finger      []*Vnode
+	last_finger int
 	predecessor *Vnode
 	stabilized  time.Time
 	timer       *time.Timer
@@ -84,7 +85,7 @@ func DefaultConfig(hostname string) *Config {
 		160,      // 160bit hash function
 		time.Duration(15 * time.Second),
 		time.Duration(45 * time.Second),
-		3,   // 3 successors
+		8,   // 8 successors
 		nil, // No delegate
 	}
 }
