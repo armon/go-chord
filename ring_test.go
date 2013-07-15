@@ -42,3 +42,22 @@ func TestRingSort(t *testing.T) {
 		t.Fatalf("bad sort")
 	}
 }
+
+func TestRingNearest(t *testing.T) {
+	ring := makeRing()
+	ring.vnodes[0].Id = []byte{2}
+	ring.vnodes[1].Id = []byte{4}
+	ring.vnodes[2].Id = []byte{7}
+	key := []byte{6}
+
+	near := ring.nearestVnode(key)
+	if near != &ring.vnodes[1] {
+		t.Fatalf("got wrong node back!")
+	}
+
+	key = []byte{0}
+	near = ring.nearestVnode(key)
+	if near != &ring.vnodes[2] {
+		t.Fatalf("got wrong node back!")
+	}
+}
