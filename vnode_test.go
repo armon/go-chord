@@ -127,6 +127,15 @@ func TestBetween(t *testing.T) {
 	}
 }
 
+func TestBetweenRightIncl(t *testing.T) {
+	t1 := []byte{0, 0, 0, 0}
+	t2 := []byte{1, 0, 0, 0}
+	k := []byte{1, 0, 0, 0}
+	if !betweenRightIncl(t1, t2, k) {
+		t.Fatalf("expected k between!")
+	}
+}
+
 func TestPowerOffset(t *testing.T) {
 	id := []byte{0, 0, 0, 0}
 	exp := 30

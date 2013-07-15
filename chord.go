@@ -22,6 +22,9 @@ type Transport interface {
 
 	// Notify our successor of ourselves
 	Notify(target, self *Vnode) ([]*Vnode, error)
+
+	// Find a successor
+	FindSuccessor(*Vnode, []byte) (*Vnode, error)
 }
 
 // Delegate to notify on ring events

@@ -3,6 +3,7 @@ package chord
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"log"
 	"math/big"
 	"math/rand"
@@ -93,10 +94,15 @@ func (vn *localVnode) checkNewSuccessor() error {
 	}
 
 	// Check if we should replace our successor
-	if between(vn.Id, succ.Id, maybe_suc.Id) {
+	if maybe_suc != nil && between(vn.Id, succ.Id, maybe_suc.Id) {
 		vn.successors[0] = maybe_suc
 	}
 	return nil
+}
+
+// RPC: Invoked to return out predecessor
+func (vn *localVnode) getPredecessor() (*Vnode, error) {
+	return vn.predecessor, nil
 }
 
 // Notifies our successor of us, updates successor list
@@ -121,8 +127,8 @@ func (vn *localVnode) notifySuccessor() error {
 	return nil
 }
 
-// RpcNotified is invoked when a Vnode gets notified
-func (vn *localVnode) RpcNotified(maybe_pred *Vnode) ([]*Vnode, error) {
+// RPC: notified is invoked when a Vnode gets notified
+func (vn *localVnode) notified(maybe_pred *Vnode) ([]*Vnode, error) {
 	// Check if we should update our predecessor
 	if vn.predecessor == nil || between(vn.predecessor.Id, vn.Id, maybe_pred.Id) {
 		vn.predecessor = maybe_pred
@@ -188,7 +194,38 @@ func (vn *localVnode) checkPredecessor() error {
 }
 
 func (vn *localVnode) findSuccessor(key []byte) (*Vnode, error) {
+	// Check if the ID is between us and our successor
+	if betweenRightIncl(vn.Id, vn.successors[0].Id, key) {
+		return vn.successors[0], nil
+	} else {
+		closest, err := vn.closestPreceeding(key)
+		if err != nil {
+			return nil, err
+		}
+		return vn.ring.transport.FindSuccessor(closest, key)
+	}
+}
 
+func (vn *localVnode) closestPreceeding(key []byte) (*Vnode, error) {
+	// Scan the successors list
+	for i := len(vn.successors) - 1; i >= 0; i-- {
+		if vn.successors[i] == nil {
+			continue
+		}
+		if between(vn.Id, key, vn.successors[i].Id) {
+			return vn.successors[i], nil
+		}
+	}
+
+	for i := len(vn.finger) - 1; i >= 0; i-- {
+		if vn.finger[i] == nil {
+			continue
+		}
+		if between(vn.Id, key, vn.finger[i].Id) {
+			return vn.finger[i], nil
+		}
+	}
+	return nil, fmt.Errorf("Failed to find a closer node!")
 }
 
 // Checks if a key is STRICTLY between two ID's exclusively
@@ -197,6 +234,17 @@ func between(id1, id2, key []byte) bool {
 		return false
 	}
 	if bytes.Compare(id2, key) != 1 {
+		return false
+	}
+	return true
+}
+
+// Checks if a key is between two ID's, right inclusive
+func betweenRightIncl(id1, id2, key []byte) bool {
+	if bytes.Compare(id1, key) != -1 {
+		return false
+	}
+	if bytes.Compare(id2, key) == -1 {
 		return false
 	}
 	return true
