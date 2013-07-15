@@ -15,7 +15,7 @@ func (vn *localVnode) init(idx int) error {
 
 	// Initialize all state
 	vn.successors = make([]*Vnode, vn.ring.config.NumSuccessors)
-	vn.finger = make([]*Vnode, 16)
+	vn.finger = make([]*Vnode, vn.ring.config.HashBits)
 	return nil
 }
 
@@ -84,16 +84,51 @@ func randStabilize(conf *Config) time.Duration {
 
 // Checks for a new successor
 func (vn *localVnode) checkNewSuccessor() error {
-	// TODO: Check for a new successor
+	// Ask our successor for it's predecessor
+	succ := vn.successors[0]
+	maybe_suc, err := vn.ring.transport.GetPredecessor(succ)
+	if err != nil {
+		return err
+	}
+
+	// Check if we should replace our successor
+	if between(vn.Id, succ.Id, maybe_suc.Id) {
+		vn.successors[0] = maybe_suc
+	}
 	return nil
 }
 
 // Notifies our successor of us, updates successor list
 func (vn *localVnode) notifySuccessor() error {
-	// TODO: Notify successor
+	// Notify successor
+	succ := vn.successors[0]
+	succ_list, err := vn.ring.transport.Notify(succ, &vn.Vnode)
+	if err != nil {
+		return err
+	}
 
-	// TODO: Update local successors list
+	// Trim the successors list if too long
+	max_succ := vn.ring.config.NumSuccessors
+	if len(succ_list) > max_succ-1 {
+		succ_list = succ_list[:max_succ-1]
+	}
+
+	// Update local successors list
+	for idx, s := range succ_list {
+		vn.successors[idx+1] = s
+	}
 	return nil
+}
+
+// RpcNotified is invoked when a Vnode gets notified
+func (vn *localVnode) RpcNotified(maybe_pred *Vnode) ([]*Vnode, error) {
+	// Check if we should update our predecessor
+	if vn.predecessor == nil || between(vn.predecessor.Id, vn.Id, maybe_pred.Id) {
+		vn.predecessor = maybe_pred
+	}
+
+	// Return our successors list
+	return vn.successors, nil
 }
 
 // Fixes up the finger table

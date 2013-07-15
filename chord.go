@@ -16,6 +16,12 @@ import (
 type Transport interface {
 	// Ping a Vnode, check for liveness
 	Ping(*Vnode) (bool, error)
+
+	// Request a nodes predecessor
+	GetPredecessor(*Vnode) (*Vnode, error)
+
+	// Notify our successor of ourselves
+	Notify(target, self *Vnode) ([]*Vnode, error)
 }
 
 // Delegate to notify on ring events
@@ -31,6 +37,7 @@ type Config struct {
 	Hostname      string           // Local host name
 	NumVnodes     int              // Number of vnodes per physical node
 	HashFunc      func() hash.Hash // Hash function to use
+	HashBits      int              // Bit size of the hash function
 	StabilizeMin  time.Duration    // Minimum stabilization time
 	StabilizeMax  time.Duration    // Maximum stabilization time
 	NumSuccessors int              // Number of successors to maintain
@@ -74,6 +81,7 @@ func DefaultConfig(hostname string) *Config {
 		hostname,
 		8,        // 8 vnodes
 		sha1.New, // SHA1
+		160,      // 160bit hash function
 		time.Duration(15 * time.Second),
 		time.Duration(45 * time.Second),
 		3,   // 3 successors
@@ -100,10 +108,8 @@ func Create(conf *Config, trans Transport) (*Ring, error) {
 	for idx, vn := range vnodes {
 		if idx == len(vnodes) {
 			vn.successors[0] = &vnodes[0].Vnode
-			vn.finger[0] = &vnodes[0].Vnode
 		} else {
 			vn.successors[0] = &vnodes[idx+1].Vnode
-			vn.finger[0] = &vnodes[idx+1].Vnode
 		}
 	}
 
