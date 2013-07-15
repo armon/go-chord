@@ -96,6 +96,17 @@ func Create(conf *Config, trans Transport) (*Ring, error) {
 	// Sort the vnodes
 	sort.Sort(ring)
 
+	// Setup each vnode successors
+	for idx, vn := range vnodes {
+		if idx == len(vnodes) {
+			vn.successors[0] = &vnodes[0].Vnode
+			vn.finger[0] = &vnodes[0].Vnode
+		} else {
+			vn.successors[0] = &vnodes[idx+1].Vnode
+			vn.finger[0] = &vnodes[idx+1].Vnode
+		}
+	}
+
 	// Schedule each Vnode
 	for _, vn := range vnodes {
 		vn.schedule()
