@@ -121,10 +121,10 @@ func (vn *localVnode) checkPredecessor() error {
 
 // Checks if a key is STRICTLY between two ID's exclusively
 func between(id1, id2, key []byte) bool {
-	if bytes.Compare(id1, key) >= 0 {
+	if bytes.Compare(id1, key) != -1 {
 		return false
 	}
-	if bytes.Compare(id2, key) <= 0 {
+	if bytes.Compare(id2, key) != 1 {
 		return false
 	}
 	return true
