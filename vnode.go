@@ -156,12 +156,13 @@ func (vn *localVnode) fixFingerTable() error {
 
 	// Try to skip as many finger entries as possible
 	for {
-		offset := powerOffset(vn.Id, vn.last_finger+1, hb)
+		next := (vn.last_finger + 1) % hb
+		offset := powerOffset(vn.Id, next, hb)
 
 		// While the node is the successor, update the finger entries
 		if bytes.Compare(node.Id, offset) == 1 {
-			vn.finger[vn.last_finger+1] = node
-			vn.last_finger++
+			vn.finger[next] = node
+			vn.last_finger = next
 		} else {
 			break
 		}
