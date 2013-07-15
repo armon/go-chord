@@ -106,3 +106,23 @@ func TestRandStabilize(t *testing.T) {
 		t.Fatalf("too many collisions! %d", collisions)
 	}
 }
+
+func TestBetween(t *testing.T) {
+	t1 := []byte{0, 0, 0, 0}
+	t2 := []byte{1, 0, 0, 0}
+	k := []byte{0, 0, 5, 0}
+	if !between(t1, t2, k) {
+		t.Fatalf("expected k between!")
+	}
+	if between(t1, t2, t1) {
+		t.Fatalf("dont expect t1 between!")
+	}
+	if between(t1, t2, t2) {
+		t.Fatalf("dont expect t1 between!")
+	}
+
+	k = []byte{2, 0, 0, 0}
+	if between(t1, t2, k) {
+		t.Fatalf("dont expect k between!")
+	}
+}

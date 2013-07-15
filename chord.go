@@ -14,6 +14,8 @@ import (
 
 // Implements the methods needed for a Chord ring
 type Transport interface {
+	// Ping a Vnode, check for liveness
+	Ping(*Vnode) (bool, error)
 }
 
 // Delegate to notify on ring events
