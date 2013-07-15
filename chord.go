@@ -8,6 +8,7 @@ package chord
 import (
 	"crypto/sha1"
 	"hash"
+	"sort"
 	"time"
 )
 
@@ -88,8 +89,13 @@ func Create(conf *Config, trans Transport) (*Ring, error) {
 		if err := vn.init(i); err != nil {
 			return nil, err
 		}
+	}
 
-		// Schedule this Vnode
+	// Sort the vnodes
+	sort.Sort(ring)
+
+	// Schedule each Vnode
+	for _, vn := range vnodes {
 		vn.schedule()
 	}
 	return ring, nil
