@@ -143,8 +143,29 @@ func (vn *localVnode) fixFingerTable() error {
 	}
 
 	// Determine the offset
-	_ = powerOffset(vn.Id, vn.last_finger, hb)
+	offset := powerOffset(vn.Id, vn.last_finger, hb)
 
+	// Find the successor
+	node, err := vn.findSuccessor(offset)
+	if err != nil {
+		return err
+	}
+
+	// Update the finger table
+	vn.finger[vn.last_finger] = node
+
+	// Try to skip as many finger entries as possible
+	for {
+		offset := powerOffset(vn.Id, vn.last_finger+1, hb)
+
+		// While the node is the successor, update the finger entries
+		if bytes.Compare(node.Id, offset) == 1 {
+			vn.finger[vn.last_finger+1] = node
+			vn.last_finger++
+		} else {
+			break
+		}
+	}
 	return nil
 }
 
@@ -163,6 +184,10 @@ func (vn *localVnode) checkPredecessor() error {
 		}
 	}
 	return nil
+}
+
+func (vn *localVnode) findSuccessor(key []byte) (*Vnode, error) {
+
 }
 
 // Checks if a key is STRICTLY between two ID's exclusively
