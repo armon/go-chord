@@ -117,6 +117,14 @@ func (*Ring) Lookup(key []byte) (VnodeIterator, error) {
 }
 
 // Does a key lookup, returning only the primary Vnode
-func (*Ring) LookupPrimary(key []byte) (*Vnode, error) {
-	return nil, nil
+func (r *Ring) LookupPrimary(key []byte) (*Vnode, error) {
+	iter, err := r.Lookup(key)
+	if err != nil {
+		return nil, err
+	}
+	prim, err := iter.Next()
+	if err != nil {
+		return nil, err
+	}
+	return prim, nil
 }
