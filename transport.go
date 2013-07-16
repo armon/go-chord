@@ -1,6 +1,7 @@
 package chord
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -14,6 +15,11 @@ type LocalTransport struct {
 
 // Creates a local transport to wrap a remote transport
 func InitLocalTransport(remote Transport) Transport {
+	// Replace a nil transport with black hole
+	if remote == nil {
+		remote = &BlackholeTransport{}
+	}
+
 	local := make(map[*Vnode]VnodeRPC)
 	return &LocalTransport{remote: remote, local: local}
 }
@@ -92,4 +98,29 @@ func (lt *LocalTransport) Register(v *Vnode, o VnodeRPC) {
 
 	// Register with remote transport
 	lt.remote.Register(v, o)
+}
+
+// Used to blackhole traffic
+type BlackholeTransport struct {
+}
+
+func (*BlackholeTransport) Ping(vn *Vnode) (bool, error) {
+	return false, nil
+}
+
+func (*BlackholeTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
+	return nil, fmt.Errorf("Failed to connect!")
+}
+
+func (*BlackholeTransport) Notify(vn, self *Vnode) ([]*Vnode, error) {
+	return nil, fmt.Errorf("Failed to connect!")
+}
+
+// Find a successor
+func (*BlackholeTransport) FindSuccessor(vn *Vnode, key []byte) (*Vnode, error) {
+	return nil, fmt.Errorf("Failed to connect!")
+}
+
+// Register for an RPC callbacks
+func (*BlackholeTransport) Register(v *Vnode, o VnodeRPC) {
 }
