@@ -33,7 +33,7 @@ func (*MockTransport) FindSuccessor(*Vnode, []byte) (*Vnode, error) {
 }
 
 // Register for an RPC callbacks
-func (*MockTransport) Register(*Vnode, VNodeRPC) {
+func (*MockTransport) Register(*Vnode, VnodeRPC) {
 
 }
 
