@@ -27,11 +27,11 @@ type Transport interface {
 	FindSuccessor(*Vnode, []byte) (*Vnode, error)
 
 	// Register for an RPC callbacks
-	Register(*Vnode, VNodeRPC)
+	Register(*Vnode, VnodeRPC)
 }
 
 // These are the methods to invoke on the registered vnodes
-type VNodeRPC interface {
+type VnodeRPC interface {
 	GetPredecessor() (*Vnode, error)
 	Notify(*Vnode) ([]*Vnode, error)
 	FindSuccessor([]byte) (*Vnode, error)
@@ -106,6 +106,7 @@ func DefaultConfig(hostname string) *Config {
 // Creates a new Chord ring given the config and transport
 func Create(conf *Config, trans Transport) (*Ring, error) {
 	vnodes := make([]localVnode, conf.NumVnodes)
+	trans = InitLocalTransport(trans)
 	ring := &Ring{conf, trans, vnodes, false}
 	for i := 0; i < conf.NumVnodes; i++ {
 		vn := &vnodes[i]
