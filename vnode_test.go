@@ -3,9 +3,39 @@ package chord
 import (
 	"bytes"
 	"crypto/sha1"
+	"fmt"
 	"testing"
 	"time"
 )
+
+type MockTransport struct {
+}
+
+// Ping a Vnode, check for liveness
+func (*MockTransport) Ping(*Vnode) (bool, error) {
+	return false, fmt.Errorf("Not supported")
+}
+
+// Request a nodes predecessor
+func (*MockTransport) GetPredecessor(*Vnode) (*Vnode, error) {
+	return nil, fmt.Errorf("Not supported")
+}
+
+// Notify our successor of ourselves
+func (*MockTransport) Notify(target, self *Vnode) ([]*Vnode, error) {
+	return nil, fmt.Errorf("Not supported")
+}
+
+// Find a successor
+func (*MockTransport) FindSuccessor(*Vnode, []byte) (*Vnode, error) {
+	return nil, fmt.Errorf("Not supported")
+
+}
+
+// Register for an RPC callbacks
+func (*MockTransport) Register(*Vnode, VNodeRPC) {
+
+}
 
 func makeVnode() *localVnode {
 	min := time.Duration(10 * time.Second)
@@ -14,7 +44,8 @@ func makeVnode() *localVnode {
 		StabilizeMin: min,
 		StabilizeMax: max,
 		HashFunc:     sha1.New}
-	ring := &Ring{config: conf}
+	mockTrans := &MockTransport{}
+	ring := &Ring{config: conf, transport: mockTrans}
 	return &localVnode{ring: ring}
 }
 
