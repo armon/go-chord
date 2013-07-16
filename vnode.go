@@ -230,24 +230,27 @@ func (vn *localVnode) closestPreceeding(key []byte) (*Vnode, error) {
 
 // Checks if a key is STRICTLY between two ID's exclusively
 func between(id1, id2, key []byte) bool {
-	if bytes.Compare(id1, key) != -1 {
-		return false
+	// Check for ring wrap around
+	if bytes.Compare(id1, id2) == 1 {
+		return bytes.Compare(id1, key) == -1 ||
+			bytes.Compare(id2, key) == 1
 	}
-	if bytes.Compare(id2, key) != 1 {
-		return false
-	}
-	return true
+
+	// Handle the normal case
+	return bytes.Compare(id1, key) == -1 &&
+		bytes.Compare(id2, key) == 1
 }
 
 // Checks if a key is between two ID's, right inclusive
 func betweenRightIncl(id1, id2, key []byte) bool {
-	if bytes.Compare(id1, key) != -1 {
-		return false
+	// Check for ring wrap around
+	if bytes.Compare(id1, id2) == 1 {
+		return bytes.Compare(id1, key) == -1 ||
+			bytes.Compare(id2, key) >= 0
 	}
-	if bytes.Compare(id2, key) == -1 {
-		return false
-	}
-	return true
+
+	return bytes.Compare(id1, key) == -1 &&
+		bytes.Compare(id2, key) >= 0
 }
 
 // Computes the offset by (n + 2^exp) % (2^mod)
