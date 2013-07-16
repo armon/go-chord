@@ -18,6 +18,9 @@ func (vn *localVnode) init(idx int) error {
 	// Initialize all state
 	vn.successors = make([]*Vnode, vn.ring.config.NumSuccessors)
 	vn.finger = make([]*Vnode, vn.ring.config.HashBits)
+
+	// Register with the RPC mechanism
+	vn.ring.transport.Register(&vn.Vnode, vn)
 	return nil
 }
 
@@ -101,7 +104,7 @@ func (vn *localVnode) checkNewSuccessor() error {
 }
 
 // RPC: Invoked to return out predecessor
-func (vn *localVnode) getPredecessor() (*Vnode, error) {
+func (vn *localVnode) GetPredecessor() (*Vnode, error) {
 	return vn.predecessor, nil
 }
 
@@ -127,8 +130,8 @@ func (vn *localVnode) notifySuccessor() error {
 	return nil
 }
 
-// RPC: notified is invoked when a Vnode gets notified
-func (vn *localVnode) notified(maybe_pred *Vnode) ([]*Vnode, error) {
+// RPC: Notify is invoked when a Vnode gets notified
+func (vn *localVnode) Notify(maybe_pred *Vnode) ([]*Vnode, error) {
 	// Check if we should update our predecessor
 	if vn.predecessor == nil || between(vn.predecessor.Id, vn.Id, maybe_pred.Id) {
 		vn.predecessor = maybe_pred
@@ -152,7 +155,7 @@ func (vn *localVnode) fixFingerTable() error {
 	offset := powerOffset(vn.Id, vn.last_finger, hb)
 
 	// Find the successor
-	node, err := vn.findSuccessor(offset)
+	node, err := vn.FindSuccessor(offset)
 	if err != nil {
 		return err
 	}
@@ -193,7 +196,8 @@ func (vn *localVnode) checkPredecessor() error {
 	return nil
 }
 
-func (vn *localVnode) findSuccessor(key []byte) (*Vnode, error) {
+// Finds a successor, also used in RPC
+func (vn *localVnode) FindSuccessor(key []byte) (*Vnode, error) {
 	// Check if the ID is between us and our successor
 	if betweenRightIncl(vn.Id, vn.successors[0].Id, key) {
 		return vn.successors[0], nil
