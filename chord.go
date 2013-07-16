@@ -121,7 +121,7 @@ func Create(conf *Config, trans Transport) (*Ring, error) {
 
 	// Setup each vnode successors
 	for idx, vn := range vnodes {
-		if idx == len(vnodes) {
+		if idx == len(vnodes)-1 {
 			vn.successors[0] = &vnodes[0].Vnode
 		} else {
 			vn.successors[0] = &vnodes[idx+1].Vnode
