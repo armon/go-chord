@@ -3,12 +3,18 @@ package chord
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"math/big"
 	"math/rand"
 	"time"
 )
+
+// Converts the ID to string
+func (vn *Vnode) String() string {
+	return hex.Dump(vn.Id)
+}
 
 // Initializes a local vnode
 func (vn *localVnode) init(idx int) error {
