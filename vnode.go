@@ -96,15 +96,29 @@ func randStabilize(conf *Config) time.Duration {
 // Checks for a new successor
 func (vn *localVnode) checkNewSuccessor() error {
 	// Ask our successor for it's predecessor
+	trans := vn.ring.transport
 	succ := vn.successors[0]
-	maybe_suc, err := vn.ring.transport.GetPredecessor(succ)
+	maybe_suc, err := trans.GetPredecessor(succ)
 	if err != nil {
+		// Handle a dead successor
+		if alive, _ := trans.Ping(succ); !alive {
+			// Advance the successors list past the dead one...
+			copy(vn.successors[0:], vn.successors[1:])
+			vn.successors[len(vn.successors)-1] = nil
+			return nil
+		}
 		return err
 	}
 
 	// Check if we should replace our successor
 	if maybe_suc != nil && between(vn.Id, succ.Id, maybe_suc.Id) {
-		vn.successors[0] = maybe_suc
+		// Check if new successor is alive before switching
+		alive, err := trans.Ping(maybe_suc)
+		if alive && err == nil {
+			vn.successors[0] = maybe_suc
+		} else {
+			return err
+		}
 	}
 	return nil
 }
@@ -198,7 +212,7 @@ func (vn *localVnode) checkPredecessor() error {
 	if vn.predecessor != nil {
 		res, err := vn.ring.transport.Ping(vn.predecessor)
 		if err != nil {
-			return nil
+			return err
 		}
 
 		// Predecessor is dead
