@@ -86,7 +86,6 @@ type Ring struct {
 // Creates an iterator over Vnodes
 type VnodeIterator interface {
 	Next() (*Vnode, error) // Returns the next vnode
-	Done() bool            // Returns true if all vnodes exhausted
 }
 
 // Returns the default Ring configuration
