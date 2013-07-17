@@ -125,6 +125,9 @@ func (vn *localVnode) notifySuccessor() error {
 
 	// Update local successors list
 	for idx, s := range succ_list {
+		if s == nil {
+			break
+		}
 		vn.successors[idx+1] = s
 	}
 	return nil
@@ -143,15 +146,8 @@ func (vn *localVnode) Notify(maybe_pred *Vnode) ([]*Vnode, error) {
 
 // Fixes up the finger table
 func (vn *localVnode) fixFingerTable() error {
-	// Increment to the index to repair
-	hb := vn.ring.config.HashBits
-	if vn.last_finger+1 == hb {
-		vn.last_finger = 0
-	} else {
-		vn.last_finger++
-	}
-
 	// Determine the offset
+	hb := vn.ring.config.HashBits
 	offset := powerOffset(vn.Id, vn.last_finger, hb)
 
 	// Find the successor
@@ -165,17 +161,28 @@ func (vn *localVnode) fixFingerTable() error {
 
 	// Try to skip as many finger entries as possible
 	for {
-		next := (vn.last_finger + 1) % hb
+		next := vn.last_finger + 1
+		if next >= hb {
+			break
+		}
 		offset := powerOffset(vn.Id, next, hb)
 
 		// While the node is the successor, update the finger entries
-		if bytes.Compare(node.Id, offset) == 1 {
+		if betweenRightIncl(vn.Id, node.Id, offset) {
 			vn.finger[next] = node
 			vn.last_finger = next
 		} else {
 			break
 		}
 	}
+
+	// Increment to the index to repair
+	if vn.last_finger+1 == hb {
+		vn.last_finger = 0
+	} else {
+		vn.last_finger++
+	}
+
 	return nil
 }
 
