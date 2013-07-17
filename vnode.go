@@ -215,34 +215,26 @@ func (vn *localVnode) FindSuccessor(key []byte) (*Vnode, error) {
 	if betweenRightIncl(vn.Id, vn.successors[0].Id, key) {
 		return vn.successors[0], nil
 	} else {
-		closest, err := vn.closestPreceeding(key)
-		if err != nil {
-			return nil, err
-		}
-		return vn.ring.transport.FindSuccessor(closest, key)
-	}
-}
+		cp := ClosestPreceedingVnodeIterator{}
+		cp.init(vn, key)
+		for {
+			// Get the next closest node
+			closest, err := cp.Next()
+			if closest == nil {
+				return nil, fmt.Errorf("Exhausted all preceeding nodes!")
+			} else if err != nil {
+				return nil, err
+			}
 
-func (vn *localVnode) closestPreceeding(key []byte) (*Vnode, error) {
-	// Scan the successors list
-	for i := len(vn.successors) - 1; i >= 0; i-- {
-		if vn.successors[i] == nil {
-			continue
-		}
-		if between(vn.Id, key, vn.successors[i].Id) {
-			return vn.successors[i], nil
-		}
-	}
-
-	for i := len(vn.finger) - 1; i >= 0; i-- {
-		if vn.finger[i] == nil {
-			continue
-		}
-		if between(vn.Id, key, vn.finger[i].Id) {
-			return vn.finger[i], nil
+			// Try that node, break on success
+			res, err := vn.ring.transport.FindSuccessor(closest, key)
+			if err == nil {
+				return res, nil
+			} else {
+				log.Printf("[ERR] Failed to contact %s. Got %s", closest.String(), err)
+			}
 		}
 	}
-	return nil, fmt.Errorf("Failed to find a closer node!")
 }
 
 // Checks if a key is STRICTLY between two ID's exclusively
