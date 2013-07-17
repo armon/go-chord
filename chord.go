@@ -120,17 +120,17 @@ func Create(conf *Config, trans Transport) (*Ring, error) {
 	sort.Sort(ring)
 
 	// Setup each vnode successors
-	for idx, vn := range vnodes {
-		if idx == len(vnodes)-1 {
-			vn.successors[0] = &vnodes[0].Vnode
+	for i := 0; i < conf.NumVnodes; i++ {
+		if i == len(vnodes)-1 {
+			vnodes[i].successors[0] = &vnodes[0].Vnode
 		} else {
-			vn.successors[0] = &vnodes[idx+1].Vnode
+			vnodes[i].successors[0] = &vnodes[i+1].Vnode
 		}
 	}
 
 	// Schedule each Vnode
-	for _, vn := range vnodes {
-		vn.schedule()
+	for i := 0; i < conf.NumVnodes; i++ {
+		vnodes[i].schedule()
 	}
 	return ring, nil
 }
