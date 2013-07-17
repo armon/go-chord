@@ -44,7 +44,7 @@ func TestInitLocalTransport(t *testing.T) {
 
 func TestLocalPing(t *testing.T) {
 	l := makeLocal()
-	vn := &Vnode{}
+	vn := &Vnode{Id: []byte{1}}
 	mockVN := &MockVnodeRPC{}
 	l.Register(vn, mockVN)
 	if res, err := l.Ping(vn); !res || err != nil {
@@ -54,12 +54,12 @@ func TestLocalPing(t *testing.T) {
 
 func TestLocalMissingPing(t *testing.T) {
 	l := makeLocal()
-	vn := &Vnode{}
+	vn := &Vnode{Id: []byte{2}}
 	mockVN := &MockVnodeRPC{}
 	l.Register(vn, mockVN)
 
 	// Print some random node
-	vn2 := &Vnode{}
+	vn2 := &Vnode{Id: []byte{3}}
 	if res, err := l.Ping(vn2); res || err == nil {
 		t.Fatalf("ping succeeded")
 	}
@@ -67,12 +67,13 @@ func TestLocalMissingPing(t *testing.T) {
 
 func TestLocalGetPredecessor(t *testing.T) {
 	l := makeLocal()
-	pred := &Vnode{}
-	vn := &Vnode{}
+	pred := &Vnode{Id: []byte{10}}
+	vn := &Vnode{Id: []byte{42}}
 	mockVN := &MockVnodeRPC{pred: pred, err: nil}
 	l.Register(vn, mockVN)
 
-	res, err := l.GetPredecessor(vn)
+	vn2 := &Vnode{Id: []byte{42}}
+	res, err := l.GetPredecessor(vn2)
 	if err != nil {
 		t.Fatalf("local GetPredecessor failed")
 	}
@@ -83,16 +84,16 @@ func TestLocalGetPredecessor(t *testing.T) {
 
 func TestLocalNotify(t *testing.T) {
 	l := makeLocal()
-	suc1 := &Vnode{}
-	suc2 := &Vnode{}
-	suc3 := &Vnode{}
+	suc1 := &Vnode{Id: []byte{10}}
+	suc2 := &Vnode{Id: []byte{20}}
+	suc3 := &Vnode{Id: []byte{30}}
 	succ_list := []*Vnode{suc1, suc2, suc3}
 
 	mockVN := &MockVnodeRPC{succ_list: succ_list, err: nil}
-	vn := &Vnode{}
+	vn := &Vnode{Id: []byte{0}}
 	l.Register(vn, mockVN)
 
-	self := &Vnode{}
+	self := &Vnode{Id: []byte{60}}
 	res, err := l.Notify(vn, self)
 	if err != nil {
 		t.Fatalf("local notify failed")
@@ -107,10 +108,10 @@ func TestLocalNotify(t *testing.T) {
 
 func TestLocalFindSucc(t *testing.T) {
 	l := makeLocal()
-	suc := &Vnode{}
+	suc := &Vnode{Id: []byte{40}}
 
 	mockVN := &MockVnodeRPC{succ: suc, err: nil}
-	vn := &Vnode{}
+	vn := &Vnode{Id: []byte{12}}
 	l.Register(vn, mockVN)
 
 	key := []byte("test")
