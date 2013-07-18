@@ -2,7 +2,6 @@ package chord
 
 import (
 	"encoding/binary"
-	"encoding/hex"
 	"fmt"
 	"log"
 	"time"
@@ -10,7 +9,7 @@ import (
 
 // Converts the ID to string
 func (vn *Vnode) String() string {
-	return hex.Dump(vn.Id)
+	return fmt.Sprintf("%x", vn.Id)
 }
 
 // Initializes a local vnode
