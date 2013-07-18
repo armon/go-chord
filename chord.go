@@ -7,6 +7,7 @@ package chord
 
 import (
 	"crypto/sha1"
+	"fmt"
 	"hash"
 	"sort"
 	"time"
@@ -83,11 +84,6 @@ type Ring struct {
 	shutdown  bool
 }
 
-// Creates an iterator over Vnodes
-type VnodeIterator interface {
-	Next() (*Vnode, error) // Returns the next vnode
-}
-
 // Returns the default Ring configuration
 func DefaultConfig(hostname string) *Config {
 	return &Config{
@@ -150,8 +146,13 @@ func (r *Ring) Shutdown() error {
 	return nil
 }
 
-// Does a key lookup
-func (r *Ring) Lookup(key []byte) (VnodeIterator, error) {
+// Does a key lookup for up to N successors of a key
+func (r *Ring) Lookup(n int, key []byte) ([]*Vnode, error) {
+	// Ensure that n is sane
+	if n > r.config.NumSuccessors {
+		return nil, fmt.Errorf("Cannot ask for more successors than NumSuccessors!")
+	}
+
 	// Hash the key
 	h := r.config.HashFunc()
 	h.Write(key)
@@ -161,24 +162,14 @@ func (r *Ring) Lookup(key []byte) (VnodeIterator, error) {
 	nearest := r.nearestVnode(key_hash)
 
 	// Use the nearest node for the lookup
-	_, err := nearest.FindSuccessors(1, key_hash)
+	successors, err := nearest.FindSuccessors(n, key_hash)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: Iterator over results
-	return nil, nil
-}
-
-// Does a key lookup, returning only the primary Vnode
-func (r *Ring) LookupPrimary(key []byte) (*Vnode, error) {
-	iter, err := r.Lookup(key)
-	if err != nil {
-		return nil, err
+	// Trim the nil successors
+	for successors[len(successors)-1] == nil {
+		successors = successors[:len(successors)-1]
 	}
-	prim, err := iter.Next()
-	if err != nil {
-		return nil, err
-	}
-	return prim, nil
+	return successors, nil
 }
