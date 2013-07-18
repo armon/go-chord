@@ -9,7 +9,7 @@ import (
 
 func makeRing() *Ring {
 	conf := &Config{
-		NumVnodes: 3,
+		NumVnodes: 5,
 		HashFunc:  sha1.New}
 
 	vnodes := make([]localVnode, conf.NumVnodes)
@@ -25,7 +25,7 @@ func makeRing() *Ring {
 
 func TestRingLen(t *testing.T) {
 	ring := makeRing()
-	if ring.Len() != 3 {
+	if ring.Len() != 5 {
 		t.Fatalf("wrong len")
 	}
 }
@@ -39,7 +39,10 @@ func TestRingSort(t *testing.T) {
 	if bytes.Compare(ring.vnodes[1].Id, ring.vnodes[2].Id) != -1 {
 		t.Fatalf("bad sort")
 	}
-	if bytes.Compare(ring.vnodes[0].Id, ring.vnodes[2].Id) != -1 {
+	if bytes.Compare(ring.vnodes[2].Id, ring.vnodes[3].Id) != -1 {
+		t.Fatalf("bad sort")
+	}
+	if bytes.Compare(ring.vnodes[3].Id, ring.vnodes[4].Id) != -1 {
 		t.Fatalf("bad sort")
 	}
 }
@@ -49,6 +52,8 @@ func TestRingNearest(t *testing.T) {
 	ring.vnodes[0].Id = []byte{2}
 	ring.vnodes[1].Id = []byte{4}
 	ring.vnodes[2].Id = []byte{7}
+	ring.vnodes[3].Id = []byte{10}
+	ring.vnodes[4].Id = []byte{14}
 	key := []byte{6}
 
 	near := ring.nearestVnode(key)
@@ -58,7 +63,7 @@ func TestRingNearest(t *testing.T) {
 
 	key = []byte{0}
 	near = ring.nearestVnode(key)
-	if near != &ring.vnodes[2] {
+	if near != &ring.vnodes[4] {
 		t.Fatalf("got wrong node back!")
 	}
 }
