@@ -111,16 +111,16 @@ func (*BlackholeTransport) Ping(vn *Vnode) (bool, error) {
 }
 
 func (*BlackholeTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
-	return nil, fmt.Errorf("Failed to connect!")
+	return nil, fmt.Errorf("Failed to connect! Blackhole: %s.", vn.String())
 }
 
 func (*BlackholeTransport) Notify(vn, self *Vnode) ([]*Vnode, error) {
-	return nil, fmt.Errorf("Failed to connect!")
+	return nil, fmt.Errorf("Failed to connect! Blackhole: %s", vn.String())
 }
 
 // Find a successor
 func (*BlackholeTransport) FindSuccessors(vn *Vnode, n int, key []byte) ([]*Vnode, error) {
-	return nil, fmt.Errorf("Failed to connect!")
+	return nil, fmt.Errorf("Failed to connect! Blackhole: %s", vn.String())
 }
 
 // Register for an RPC callbacks

@@ -156,7 +156,7 @@ func TestBHGetPred(t *testing.T) {
 	bh := BlackholeTransport{}
 	vn := &Vnode{Id: []byte{12}}
 	_, err := bh.GetPredecessor(vn)
-	if err.Error() != "Failed to connect!" {
+	if err.Error()[:18] != "Failed to connect!" {
 		t.Fatalf("expected fail")
 	}
 }
@@ -166,7 +166,7 @@ func TestBHNotify(t *testing.T) {
 	vn := &Vnode{Id: []byte{12}}
 	vn2 := &Vnode{Id: []byte{42}}
 	_, err := bh.Notify(vn, vn2)
-	if err.Error() != "Failed to connect!" {
+	if err.Error()[:18] != "Failed to connect!" {
 		t.Fatalf("expected fail")
 	}
 }
@@ -175,7 +175,7 @@ func TestBHFindSuccessors(t *testing.T) {
 	bh := BlackholeTransport{}
 	vn := &Vnode{Id: []byte{12}}
 	_, err := bh.FindSuccessors(vn, 1, []byte("test"))
-	if err.Error() != "Failed to connect!" {
+	if err.Error()[:18] != "Failed to connect!" {
 		t.Fatalf("expected fail")
 	}
 }
