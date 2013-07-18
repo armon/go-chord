@@ -80,7 +80,7 @@ type localVnode struct {
 type Ring struct {
 	config    *Config
 	transport Transport
-	vnodes    []localVnode
+	vnodes    []*localVnode
 	shutdown  bool
 }
 
@@ -100,11 +100,12 @@ func DefaultConfig(hostname string) *Config {
 
 // Creates a new Chord ring given the config and transport
 func Create(conf *Config, trans Transport) (*Ring, error) {
-	vnodes := make([]localVnode, conf.NumVnodes)
+	vnodes := make([]*localVnode, conf.NumVnodes)
 	trans = InitLocalTransport(trans)
 	ring := &Ring{conf, trans, vnodes, false}
 	for i := 0; i < conf.NumVnodes; i++ {
-		vn := &vnodes[i]
+		vn := &localVnode{}
+		vnodes[i] = vn
 		vn.ring = ring
 		if err := vn.init(i); err != nil {
 			return nil, err

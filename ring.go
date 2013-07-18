@@ -24,9 +24,9 @@ func (r *Ring) Swap(i, j int) {
 func (r *Ring) nearestVnode(key []byte) *localVnode {
 	for i := len(r.vnodes) - 1; i >= 0; i-- {
 		if bytes.Compare(r.vnodes[i].Id, key) == -1 {
-			return &r.vnodes[i]
+			return r.vnodes[i]
 		}
 	}
 	// Return the last vnode
-	return &r.vnodes[len(r.vnodes)-1]
+	return r.vnodes[len(r.vnodes)-1]
 }

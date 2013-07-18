@@ -9,14 +9,16 @@ import (
 
 func makeRing() *Ring {
 	conf := &Config{
-		NumVnodes: 5,
-		HashFunc:  sha1.New}
+		NumVnodes:     5,
+		NumSuccessors: 8,
+		HashFunc:      sha1.New}
 
-	vnodes := make([]localVnode, conf.NumVnodes)
+	vnodes := make([]*localVnode, conf.NumVnodes)
 	trans := InitLocalTransport(nil)
 	ring := &Ring{config: conf, vnodes: vnodes, transport: trans}
 	for i := 0; i < conf.NumVnodes; i++ {
-		vn := &vnodes[i]
+		vn := &localVnode{}
+		vnodes[i] = vn
 		vn.ring = ring
 		vn.init(i)
 	}
@@ -57,13 +59,13 @@ func TestRingNearest(t *testing.T) {
 	key := []byte{6}
 
 	near := ring.nearestVnode(key)
-	if near != &ring.vnodes[1] {
+	if near != ring.vnodes[1] {
 		t.Fatalf("got wrong node back!")
 	}
 
 	key = []byte{0}
 	near = ring.nearestVnode(key)
-	if near != &ring.vnodes[4] {
+	if near != ring.vnodes[4] {
 		t.Fatalf("got wrong node back!")
 	}
 }
