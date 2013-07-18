@@ -27,8 +27,7 @@ func (mv *MockVnodeRPC) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 }
 
 func makeLocal() *LocalTransport {
-	mockTrans := &MockTransport{}
-	return InitLocalTransport(mockTrans).(*LocalTransport)
+	return InitLocalTransport(nil).(*LocalTransport)
 }
 
 func TestInitLocalTransport(t *testing.T) {
@@ -59,7 +58,7 @@ func TestLocalMissingPing(t *testing.T) {
 
 	// Print some random node
 	vn2 := &Vnode{Id: []byte{3}}
-	if res, err := l.Ping(vn2); res || err == nil {
+	if res, _ := l.Ping(vn2); res {
 		t.Fatalf("ping succeeded")
 	}
 }

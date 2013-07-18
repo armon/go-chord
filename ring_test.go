@@ -13,8 +13,8 @@ func makeRing() *Ring {
 		HashFunc:  sha1.New}
 
 	vnodes := make([]localVnode, conf.NumVnodes)
-	mockTrans := &MockTransport{}
-	ring := &Ring{config: conf, vnodes: vnodes, transport: mockTrans}
+	trans := InitLocalTransport(nil)
+	ring := &Ring{config: conf, vnodes: vnodes, transport: trans}
 	for i := 0; i < conf.NumVnodes; i++ {
 		vn := &vnodes[i]
 		vn.ring = ring
