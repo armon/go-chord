@@ -1,13 +1,10 @@
 package chord
 
 import (
-	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"log"
-	"math/big"
-	"math/rand"
 	"time"
 )
 
@@ -83,14 +80,6 @@ func (vn *localVnode) stabilize() {
 
 	// Set the last stabilized time
 	vn.stabilized = time.Now()
-}
-
-// Generates a random stabilization time
-func randStabilize(conf *Config) time.Duration {
-	min := conf.StabilizeMin
-	max := conf.StabilizeMax
-	r := rand.Float64()
-	return time.Duration((r * float64(max-min)) + float64(min))
 }
 
 // Checks for a new successor
@@ -171,8 +160,9 @@ func (vn *localVnode) fixFingerTable() error {
 	offset := powerOffset(vn.Id, vn.last_finger, hb)
 
 	// Find the successor
-	node, err := vn.FindSuccessor(offset)
-	if err != nil {
+	nodes, err := vn.FindSuccessors(1, offset)
+	node := nodes[0]
+	if node == nil || err != nil {
 		return err
 	}
 
@@ -223,85 +213,41 @@ func (vn *localVnode) checkPredecessor() error {
 	return nil
 }
 
-// Finds a successor, also used in RPC
-func (vn *localVnode) FindSuccessor(key []byte) (*Vnode, error) {
-	// Check if the ID is between us and our successor
-	if betweenRightIncl(vn.Id, vn.successors[0].Id, key) {
-		return vn.successors[0], nil
-	} else {
-		cp := ClosestPreceedingVnodeIterator{}
-		cp.init(vn, key)
-		for {
-			// Get the next closest node
-			closest, err := cp.Next()
-			if closest == nil {
-				return nil, fmt.Errorf("Exhausted all preceeding nodes!")
-			} else if err != nil {
-				return nil, err
-			}
-
-			// Try that node, break on success
-			res, err := vn.ring.transport.FindSuccessor(closest, key)
-			if err == nil {
-				return res, nil
-			} else {
-				log.Printf("[ERR] Failed to contact %s. Got %s", closest.String(), err)
-			}
+// Finds next N successors. N must be <= NumSuccessors
+func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
+	// Determine how many successors we know of
+	var successors int
+	for i := 0; i < len(vn.successors); i++ {
+		if vn.successors[i] != nil {
+			successors = i + 1
 		}
 	}
-}
 
-// Checks if a key is STRICTLY between two ID's exclusively
-func between(id1, id2, key []byte) bool {
-	// Check for ring wrap around
-	if bytes.Compare(id1, id2) == 1 {
-		return bytes.Compare(id1, key) == -1 ||
-			bytes.Compare(id2, key) == 1
+	// Check if the ID is between us and any successors
+	for i := 0; i < max(successors-n, 1); i++ {
+		if betweenRightIncl(vn.Id, vn.successors[i].Id, key) {
+			return vn.successors[i : i+n], nil
+		}
 	}
 
-	// Handle the normal case
-	return bytes.Compare(id1, key) == -1 &&
-		bytes.Compare(id2, key) == 1
-}
+	// Try the closest preceeding nodes
+	cp := ClosestPreceedingVnodeIterator{}
+	cp.init(vn, key)
+	for {
+		// Get the next closest node
+		closest, err := cp.Next()
+		if closest == nil {
+			return nil, fmt.Errorf("Exhausted all preceeding nodes!")
+		} else if err != nil {
+			return nil, err
+		}
 
-// Checks if a key is between two ID's, right inclusive
-func betweenRightIncl(id1, id2, key []byte) bool {
-	// Check for ring wrap around
-	if bytes.Compare(id1, id2) == 1 {
-		return bytes.Compare(id1, key) == -1 ||
-			bytes.Compare(id2, key) >= 0
+		// Try that node, break on success
+		res, err := vn.ring.transport.FindSuccessors(closest, n, key)
+		if err == nil {
+			return res, nil
+		} else {
+			log.Printf("[ERR] Failed to contact %s. Got %s", closest.String(), err)
+		}
 	}
-
-	return bytes.Compare(id1, key) == -1 &&
-		bytes.Compare(id2, key) >= 0
-}
-
-// Computes the offset by (n + 2^exp) % (2^mod)
-func powerOffset(id []byte, exp int, mod int) []byte {
-	// Copy the existing slice
-	off := make([]byte, len(id))
-	copy(off, id)
-
-	// Convert the ID to a bigint
-	idInt := big.Int{}
-	idInt.SetBytes(id)
-
-	// Get the offset
-	two := big.NewInt(2)
-	offset := big.Int{}
-	offset.Exp(two, big.NewInt(int64(exp)), nil)
-
-	// Sum
-	sum := big.Int{}
-	sum.Add(&idInt, &offset)
-
-	// Get the ceiling
-	ceil := big.Int{}
-	ceil.Exp(two, big.NewInt(int64(mod)), nil)
-
-	// Apply the mod
-	idInt.Mod(&sum, &ceil)
-
-	// Add together
-	return idInt.Bytes()
 }

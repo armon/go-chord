@@ -24,7 +24,7 @@ type Transport interface {
 	Notify(target, self *Vnode) ([]*Vnode, error)
 
 	// Find a successor
-	FindSuccessor(*Vnode, []byte) (*Vnode, error)
+	FindSuccessors(*Vnode, int, []byte) ([]*Vnode, error)
 
 	// Register for an RPC callbacks
 	Register(*Vnode, VnodeRPC)
@@ -34,7 +34,7 @@ type Transport interface {
 type VnodeRPC interface {
 	GetPredecessor() (*Vnode, error)
 	Notify(*Vnode) ([]*Vnode, error)
-	FindSuccessor([]byte) (*Vnode, error)
+	FindSuccessors(int, []byte) ([]*Vnode, error)
 }
 
 // Delegate to notify on ring events
@@ -161,7 +161,7 @@ func (r *Ring) Lookup(key []byte) (VnodeIterator, error) {
 	nearest := r.nearestVnode(key_hash)
 
 	// Use the nearest node for the lookup
-	_, err := nearest.FindSuccessor(key_hash)
+	_, err := nearest.FindSuccessors(1, key_hash)
 	if err != nil {
 		return nil, err
 	}
