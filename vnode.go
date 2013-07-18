@@ -86,15 +86,24 @@ func (vn *localVnode) stabilize() {
 func (vn *localVnode) checkNewSuccessor() error {
 	// Ask our successor for it's predecessor
 	trans := vn.ring.transport
+
+CHECK_NEW_SUC:
 	succ := vn.successors[0]
 	maybe_suc, err := trans.GetPredecessor(succ)
 	if err != nil {
-		// Handle a dead successor
-		if alive, _ := trans.Ping(succ); !alive {
-			// Advance the successors list past the dead one...
-			copy(vn.successors[0:], vn.successors[1:])
-			vn.successors[len(vn.successors)-1] = nil
-			return nil
+		// Check if we have succ list, try to contact next live succ
+		known := vn.knownSuccessors()
+		if known > 1 {
+			for i := 0; i < known; i++ {
+				if alive, _ := trans.Ping(vn.successors[0]); !alive {
+					// Advance the successors list past the dead one
+					copy(vn.successors[0:], vn.successors[1:])
+					vn.successors[known-1-i] = nil
+				} else {
+					// Found live successor, check for new one
+					goto CHECK_NEW_SUC
+				}
+			}
 		}
 		return err
 	}
