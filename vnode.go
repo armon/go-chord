@@ -88,6 +88,9 @@ func (vn *localVnode) checkNewSuccessor() error {
 
 CHECK_NEW_SUC:
 	succ := vn.successors[0]
+	if succ == nil {
+		panic("Node has no successor!")
+	}
 	maybe_suc, err := trans.GetPredecessor(succ)
 	if err != nil {
 		// Check if we have succ list, try to contact next live succ
@@ -169,10 +172,10 @@ func (vn *localVnode) fixFingerTable() error {
 
 	// Find the successor
 	nodes, err := vn.FindSuccessors(1, offset)
-	node := nodes[0]
-	if node == nil || err != nil {
+	if nodes == nil || len(nodes) == 0 || err != nil {
 		return err
 	}
+	node := nodes[0]
 
 	// Update the finger table
 	vn.finger[vn.last_finger] = node
