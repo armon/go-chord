@@ -11,7 +11,7 @@ type MockVnodeRPC struct {
 	not_pred  *Vnode
 	succ_list []*Vnode
 	key       []byte
-	succ      *Vnode
+	succ      []*Vnode
 }
 
 func (mv *MockVnodeRPC) GetPredecessor() (*Vnode, error) {
@@ -21,7 +21,7 @@ func (mv *MockVnodeRPC) Notify(vn *Vnode) ([]*Vnode, error) {
 	mv.not_pred = vn
 	return mv.succ_list, mv.err
 }
-func (mv *MockVnodeRPC) FindSuccessor(key []byte) (*Vnode, error) {
+func (mv *MockVnodeRPC) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 	mv.key = key
 	return mv.succ, mv.err
 }
@@ -108,18 +108,18 @@ func TestLocalNotify(t *testing.T) {
 
 func TestLocalFindSucc(t *testing.T) {
 	l := makeLocal()
-	suc := &Vnode{Id: []byte{40}}
+	suc := []*Vnode{&Vnode{Id: []byte{40}}}
 
 	mockVN := &MockVnodeRPC{succ: suc, err: nil}
 	vn := &Vnode{Id: []byte{12}}
 	l.Register(vn, mockVN)
 
 	key := []byte("test")
-	res, err := l.FindSuccessor(vn, key)
+	res, err := l.FindSuccessors(vn, 1, key)
 	if err != nil {
 		t.Fatalf("local FindSuccessor failed")
 	}
-	if res != suc {
+	if res[0] != suc[0] {
 		t.Fatalf("got wrong successor")
 	}
 	if bytes.Compare(mockVN.key, key) != 0 {

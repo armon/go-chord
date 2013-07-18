@@ -27,7 +27,7 @@ func (*MockTransport) Notify(target, self *Vnode) ([]*Vnode, error) {
 }
 
 // Find a successor
-func (*MockTransport) FindSuccessor(*Vnode, []byte) (*Vnode, error) {
+func (*MockTransport) FindSuccessors(*Vnode, int, []byte) ([]*Vnode, error) {
 	return nil, fmt.Errorf("Not supported")
 
 }

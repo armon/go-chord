@@ -76,17 +76,17 @@ func (lt *LocalTransport) Notify(vn, self *Vnode) ([]*Vnode, error) {
 }
 
 // Find a successor
-func (lt *LocalTransport) FindSuccessor(vn *Vnode, key []byte) (*Vnode, error) {
+func (lt *LocalTransport) FindSuccessors(vn *Vnode, n int, key []byte) ([]*Vnode, error) {
 	// Look for it locally
 	obj, ok := lt.get(vn)
 
 	// If it exists locally, handle it
 	if ok {
-		return obj.FindSuccessor(key)
+		return obj.FindSuccessors(n, key)
 	}
 
 	// Pass onto remote
-	return lt.remote.FindSuccessor(vn, key)
+	return lt.remote.FindSuccessors(vn, n, key)
 
 }
 
@@ -119,7 +119,7 @@ func (*BlackholeTransport) Notify(vn, self *Vnode) ([]*Vnode, error) {
 }
 
 // Find a successor
-func (*BlackholeTransport) FindSuccessor(vn *Vnode, key []byte) (*Vnode, error) {
+func (*BlackholeTransport) FindSuccessors(vn *Vnode, n int, key []byte) ([]*Vnode, error) {
 	return nil, fmt.Errorf("Failed to connect!")
 }
 
