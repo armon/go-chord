@@ -32,9 +32,8 @@ func makeLocal() *LocalTransport {
 }
 
 func TestInitLocalTransport(t *testing.T) {
-	mockTrans := &MockTransport{}
-	local := InitLocalTransport(mockTrans).(*LocalTransport)
-	if local.remote != mockTrans {
+	local := InitLocalTransport(nil).(*LocalTransport)
+	if local.remote == nil {
 		t.Fatalf("bad remote")
 	}
 	if local.local == nil {
@@ -80,6 +79,12 @@ func TestLocalGetPredecessor(t *testing.T) {
 	if res != pred {
 		t.Fatalf("got wrong predecessor")
 	}
+
+	unknown := &Vnode{Id: []byte{1}}
+	res, err = l.GetPredecessor(unknown)
+	if err == nil {
+		t.Fatalf("expected error!")
+	}
 }
 
 func TestLocalNotify(t *testing.T) {
@@ -104,6 +109,12 @@ func TestLocalNotify(t *testing.T) {
 	if mockVN.not_pred != self {
 		t.Fatalf("didn't get notified correctly!")
 	}
+
+	unknown := &Vnode{Id: []byte{1}}
+	res, err = l.Notify(unknown, self)
+	if err == nil {
+		t.Fatalf("remote notify should fail")
+	}
 }
 
 func TestLocalFindSucc(t *testing.T) {
@@ -125,4 +136,54 @@ func TestLocalFindSucc(t *testing.T) {
 	if bytes.Compare(mockVN.key, key) != 0 {
 		t.Fatalf("didn't get key correctly!")
 	}
+
+	unknown := &Vnode{Id: []byte{1}}
+	res, err = l.FindSuccessors(unknown, 1, key)
+	if err == nil {
+		t.Fatalf("remote find should fail")
+	}
+}
+
+func TestBHPing(t *testing.T) {
+	bh := BlackholeTransport{}
+	vn := &Vnode{Id: []byte{12}}
+	res, err := bh.Ping(vn)
+	if res || err != nil {
+		t.Fatalf("expected fail")
+	}
+}
+
+func TestBHGetPred(t *testing.T) {
+	bh := BlackholeTransport{}
+	vn := &Vnode{Id: []byte{12}}
+	_, err := bh.GetPredecessor(vn)
+	if err.Error() != "Failed to connect!" {
+		t.Fatalf("expected fail")
+	}
+}
+
+func TestBHNotify(t *testing.T) {
+	bh := BlackholeTransport{}
+	vn := &Vnode{Id: []byte{12}}
+	vn2 := &Vnode{Id: []byte{42}}
+	_, err := bh.Notify(vn, vn2)
+	if err.Error() != "Failed to connect!" {
+		t.Fatalf("expected fail")
+	}
+}
+
+func TestBHFindSuccessors(t *testing.T) {
+	bh := BlackholeTransport{}
+	vn := &Vnode{Id: []byte{12}}
+	_, err := bh.FindSuccessors(vn, 1, []byte("test"))
+	if err.Error() != "Failed to connect!" {
+		t.Fatalf("expected fail")
+	}
+}
+
+func TestBHRegister(t *testing.T) {
+	bh := BlackholeTransport{}
+	vn := &localVnode{}
+	vn.Id = []byte{12}
+	bh.Register(&vn.Vnode, vn)
 }
