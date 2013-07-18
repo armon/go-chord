@@ -3,6 +3,7 @@ package chord
 import (
 	"bytes"
 	"crypto/sha1"
+	"sort"
 	"testing"
 	"time"
 )
@@ -136,6 +137,140 @@ func TestVnodeCheckNewSuccAlive(t *testing.T) {
 	}
 
 	if vn1.successors[0] != &vn2.Vnode {
+		t.Fatalf("unexpected successor!")
+	}
+}
+
+// Checks pinging a dead successor with no alternates
+func TestVnodeCheckNewSuccDead(t *testing.T) {
+	vn1 := makeVnode()
+	vn1.init(1)
+	vn1.successors[0] = &Vnode{Id: []byte{0}}
+
+	if err := vn1.checkNewSuccessor(); err == nil {
+		t.Fatalf("err!", err)
+	}
+
+	if vn1.successors[0].String() != "00" {
+		t.Fatalf("unexpected successor!")
+	}
+}
+
+// Checks pinging a dead successor with alternate
+func TestVnodeCheckNewSuccDeadAlternate(t *testing.T) {
+	r := makeRing()
+	sort.Sort(r)
+
+	vn1 := r.vnodes[0]
+	vn2 := r.vnodes[1]
+	vn3 := r.vnodes[2]
+
+	vn1.successors[0] = &vn2.Vnode
+	vn1.successors[1] = &vn3.Vnode
+	vn2.predecessor = &vn1.Vnode
+	vn3.predecessor = &vn2.Vnode
+
+	// Remove vn2
+	(r.transport.(*LocalTransport)).Deregister(&vn2.Vnode)
+
+	// Should not get an error
+	if err := vn1.checkNewSuccessor(); err != nil {
+		t.Fatalf("unexpected err %s", err)
+	}
+
+	// Should become vn3
+	if vn1.successors[0] != &vn3.Vnode {
+		t.Fatalf("unexpected successor!")
+	}
+}
+
+// Checks pinging a dead successor with all dead alternates
+func TestVnodeCheckNewSuccAllDeadAlternates(t *testing.T) {
+	r := makeRing()
+	sort.Sort(r)
+
+	vn1 := r.vnodes[0]
+	vn2 := r.vnodes[1]
+	vn3 := r.vnodes[2]
+
+	vn1.successors[0] = &vn2.Vnode
+	vn1.successors[1] = &vn3.Vnode
+	vn2.predecessor = &vn1.Vnode
+	vn3.predecessor = &vn2.Vnode
+
+	// Remove vn2
+	(r.transport.(*LocalTransport)).Deregister(&vn2.Vnode)
+	(r.transport.(*LocalTransport)).Deregister(&vn3.Vnode)
+
+	// Should get an error
+	if err := vn1.checkNewSuccessor(); err.Error() != "All known successors dead!" {
+		t.Fatalf("unexpected err %s", err)
+	}
+
+	// Should just be vn3
+	if vn1.successors[0] != &vn3.Vnode {
+		t.Fatalf("unexpected successor!")
+	}
+}
+
+// Checks pinging a successor, and getting a new successor
+func TestVnodeCheckNewSuccNewSucc(t *testing.T) {
+	r := makeRing()
+	sort.Sort(r)
+
+	vn1 := r.vnodes[0]
+	vn2 := r.vnodes[1]
+	vn3 := r.vnodes[2]
+
+	vn1.successors[0] = &vn3.Vnode
+	vn2.predecessor = &vn1.Vnode
+	vn3.predecessor = &vn2.Vnode
+
+	// vn3 pred is vn2
+	if pred, _ := vn3.GetPredecessor(); pred != &vn2.Vnode {
+		t.Fatalf("expected vn2 as predecessor")
+	}
+
+	// Should not get an error
+	if err := vn1.checkNewSuccessor(); err != nil {
+		t.Fatalf("unexpected err %s", err)
+	}
+
+	// Should become vn2
+	if vn1.successors[0] != &vn2.Vnode {
+		t.Fatalf("unexpected successor! %s", vn1.successors[0])
+	}
+
+	// 2nd successor should become vn3
+	if vn1.successors[1] != &vn3.Vnode {
+		t.Fatalf("unexpected 2nd successor!")
+	}
+}
+
+// Checks pinging a successor, and getting a new successor
+// which is not alive
+func TestVnodeCheckNewSuccNewSuccDead(t *testing.T) {
+	r := makeRing()
+	sort.Sort(r)
+
+	vn1 := r.vnodes[0]
+	vn2 := r.vnodes[1]
+	vn3 := r.vnodes[2]
+
+	vn1.successors[0] = &vn3.Vnode
+	vn2.predecessor = &vn1.Vnode
+	vn3.predecessor = &vn2.Vnode
+
+	// Remove vn2
+	(r.transport.(*LocalTransport)).Deregister(&vn2.Vnode)
+
+	// Should not get an error
+	if err := vn1.checkNewSuccessor(); err != nil {
+		t.Fatalf("unexpected err %s", err)
+	}
+
+	// Should stay vn3
+	if vn1.successors[0] != &vn3.Vnode {
 		t.Fatalf("unexpected successor!")
 	}
 }

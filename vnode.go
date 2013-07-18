@@ -98,6 +98,11 @@ CHECK_NEW_SUC:
 		if known > 1 {
 			for i := 0; i < known; i++ {
 				if alive, _ := trans.Ping(vn.successors[0]); !alive {
+					// Don't eliminate the last successor we know of
+					if i+1 == known {
+						return fmt.Errorf("All known successors dead!")
+					}
+
 					// Advance the successors list past the dead one
 					copy(vn.successors[0:], vn.successors[1:])
 					vn.successors[known-1-i] = nil
@@ -115,6 +120,7 @@ CHECK_NEW_SUC:
 		// Check if new successor is alive before switching
 		alive, err := trans.Ping(maybe_suc)
 		if alive && err == nil {
+			copy(vn.successors[1:], vn.successors[0:len(vn.successors)-1])
 			vn.successors[0] = maybe_suc
 		} else {
 			return err
