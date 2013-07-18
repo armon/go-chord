@@ -274,3 +274,145 @@ func TestVnodeCheckNewSuccNewSuccDead(t *testing.T) {
 		t.Fatalf("unexpected successor!")
 	}
 }
+
+// Test notifying a successor successfully
+func TestVnodeNotifySucc(t *testing.T) {
+	r := makeRing()
+	sort.Sort(r)
+
+	s1 := &Vnode{Id: []byte{1}}
+	s2 := &Vnode{Id: []byte{2}}
+	s3 := &Vnode{Id: []byte{3}}
+
+	vn1 := r.vnodes[0]
+	vn2 := r.vnodes[1]
+	vn1.successors[0] = &vn2.Vnode
+	vn2.predecessor = &vn1.Vnode
+	vn2.successors[0] = s1
+	vn2.successors[1] = s2
+	vn2.successors[2] = s3
+
+	// Should get no error
+	if err := vn1.notifySuccessor(); err != nil {
+		t.Fatalf("unexpected err %s", err)
+	}
+
+	// Successor list should be updated
+	if vn1.successors[1] != s1 {
+		t.Fatalf("bad succ 1")
+	}
+	if vn1.successors[2] != s2 {
+		t.Fatalf("bad succ 2")
+	}
+	if vn1.successors[3] != s3 {
+		t.Fatalf("bad succ 3")
+	}
+
+	// Predecessor should not updated
+	if vn2.predecessor != &vn1.Vnode {
+		t.Fatalf("bad predecessor")
+	}
+}
+
+// Test notifying a dead successor
+func TestVnodeNotifySuccDead(t *testing.T) {
+	r := makeRing()
+	sort.Sort(r)
+
+	vn1 := r.vnodes[0]
+	vn2 := r.vnodes[1]
+	vn1.successors[0] = &vn2.Vnode
+	vn2.predecessor = &vn1.Vnode
+
+	// Remove vn2
+	(r.transport.(*LocalTransport)).Deregister(&vn2.Vnode)
+
+	// Should get error
+	if err := vn1.notifySuccessor(); err == nil {
+		t.Fatalf("expected err!")
+	}
+}
+
+func TestVnodeNotifySamePred(t *testing.T) {
+	r := makeRing()
+	sort.Sort(r)
+
+	s1 := &Vnode{Id: []byte{1}}
+	s2 := &Vnode{Id: []byte{2}}
+	s3 := &Vnode{Id: []byte{3}}
+
+	vn1 := r.vnodes[0]
+	vn2 := r.vnodes[1]
+	vn1.successors[0] = &vn2.Vnode
+	vn2.predecessor = &vn1.Vnode
+	vn2.successors[0] = s1
+	vn2.successors[1] = s2
+	vn2.successors[2] = s3
+
+	succs, err := vn2.Notify(&vn1.Vnode)
+	if err != nil {
+		t.Fatalf("unexpected error! %s", err)
+	}
+	if succs[0] != s1 {
+		t.Fatalf("unexpected succ 0")
+	}
+	if succs[1] != s2 {
+		t.Fatalf("unexpected succ 1")
+	}
+	if succs[2] != s3 {
+		t.Fatalf("unexpected succ 2")
+	}
+	if vn2.predecessor != &vn1.Vnode {
+		t.Fatalf("unexpected pred")
+	}
+}
+
+func TestVnodeNotifyNoPred(t *testing.T) {
+	r := makeRing()
+	sort.Sort(r)
+
+	s1 := &Vnode{Id: []byte{1}}
+	s2 := &Vnode{Id: []byte{2}}
+	s3 := &Vnode{Id: []byte{3}}
+
+	vn1 := r.vnodes[0]
+	vn2 := r.vnodes[1]
+	vn2.successors[0] = s1
+	vn2.successors[1] = s2
+	vn2.successors[2] = s3
+
+	succs, err := vn2.Notify(&vn1.Vnode)
+	if err != nil {
+		t.Fatalf("unexpected error! %s", err)
+	}
+	if succs[0] != s1 {
+		t.Fatalf("unexpected succ 0")
+	}
+	if succs[1] != s2 {
+		t.Fatalf("unexpected succ 1")
+	}
+	if succs[2] != s3 {
+		t.Fatalf("unexpected succ 2")
+	}
+	if vn2.predecessor != &vn1.Vnode {
+		t.Fatalf("unexpected pred")
+	}
+}
+
+func TestVnodeNotifyNewPred(t *testing.T) {
+	r := makeRing()
+	sort.Sort(r)
+
+	vn1 := r.vnodes[0]
+	vn2 := r.vnodes[1]
+	vn3 := r.vnodes[2]
+	vn3.predecessor = &vn1.Vnode
+
+	_, err := vn3.Notify(&vn2.Vnode)
+	if err != nil {
+		t.Fatalf("unexpected error! %s", err)
+	}
+	if vn3.predecessor != &vn2.Vnode {
+		t.Fatalf("unexpected pred")
+	}
+}
