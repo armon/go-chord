@@ -143,6 +143,20 @@ func TestLocalFindSucc(t *testing.T) {
 	}
 }
 
+func TestLocalDeregister(t *testing.T) {
+	l := makeLocal()
+	vn := &Vnode{Id: []byte{1}}
+	mockVN := &MockVnodeRPC{}
+	l.Register(vn, mockVN)
+	if res, err := l.Ping(vn); !res || err != nil {
+		t.Fatalf("local ping failed")
+	}
+	l.Deregister(vn)
+	if res, _ := l.Ping(vn); res {
+		t.Fatalf("local ping succeeded")
+	}
+}
+
 func TestBHPing(t *testing.T) {
 	bh := BlackholeTransport{}
 	vn := &Vnode{Id: []byte{12}}

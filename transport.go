@@ -102,6 +102,14 @@ func (lt *LocalTransport) Register(v *Vnode, o VnodeRPC) {
 	lt.remote.Register(v, o)
 }
 
+// Used to deregister a local node
+func (lt *LocalTransport) Deregister(v *Vnode) {
+	key := v.String()
+	lt.lock.Lock()
+	delete(lt.local, key)
+	lt.lock.Unlock()
+}
+
 // Used to blackhole traffic
 type BlackholeTransport struct {
 }
