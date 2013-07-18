@@ -216,12 +216,7 @@ func (vn *localVnode) checkPredecessor() error {
 // Finds next N successors. N must be <= NumSuccessors
 func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 	// Determine how many successors we know of
-	var successors int
-	for i := 0; i < len(vn.successors); i++ {
-		if vn.successors[i] != nil {
-			successors = i + 1
-		}
-	}
+	successors := vn.knownSuccessors()
 
 	// Check if the ID is between us and any successors
 	for i := 0; i < max(successors-n, 1); i++ {
@@ -250,4 +245,14 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 			log.Printf("[ERR] Failed to contact %s. Got %s", closest.String(), err)
 		}
 	}
+}
+
+// Determine how many successors we know of
+func (vn *localVnode) knownSuccessors() (successors int) {
+	for i := 0; i < len(vn.successors); i++ {
+		if vn.successors[i] != nil {
+			successors = i + 1
+		}
+	}
+	return
 }
