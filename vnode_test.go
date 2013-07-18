@@ -41,9 +41,10 @@ func makeVnode() *localVnode {
 	min := time.Duration(10 * time.Second)
 	max := time.Duration(30 * time.Second)
 	conf := &Config{
-		StabilizeMin: min,
-		StabilizeMax: max,
-		HashFunc:     sha1.New}
+		NumSuccessors: 8,
+		StabilizeMin:  min,
+		StabilizeMax:  max,
+		HashFunc:      sha1.New}
 	mockTrans := &MockTransport{}
 	ring := &Ring{config: conf, transport: mockTrans}
 	return &localVnode{ring: ring}
@@ -102,5 +103,17 @@ func TestVnodeStabilizeShutdown(t *testing.T) {
 	}
 	if !vn.stabilized.IsZero() {
 		t.Fatalf("unexpected time")
+	}
+}
+
+func TestVnodeKnownSucc(t *testing.T) {
+	vn := makeVnode()
+	vn.init(0)
+	if vn.knownSuccessors() != 0 {
+		t.Fatalf("wrong num known!")
+	}
+	vn.successors[0] = &Vnode{Id: []byte{1}}
+	if vn.knownSuccessors() != 1 {
+		t.Fatalf("wrong num known!")
 	}
 }
