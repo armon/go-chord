@@ -416,3 +416,46 @@ func TestVnodeNotifyNewPred(t *testing.T) {
 		t.Fatalf("unexpected pred")
 	}
 }
+
+func TestVnodeCheckPredNoPred(t *testing.T) {
+	v := makeVnode()
+	v.init(0)
+	if err := v.checkPredecessor(); err != nil {
+		t.Fatalf("unpexected err! %s", err)
+	}
+}
+
+func TestVnodeCheckLivePred(t *testing.T) {
+	r := makeRing()
+	sort.Sort(r)
+
+	vn1 := r.vnodes[0]
+	vn2 := r.vnodes[1]
+	vn2.predecessor = &vn1.Vnode
+
+	if err := vn2.checkPredecessor(); err != nil {
+		t.Fatalf("unexpected error! %s", err)
+	}
+	if vn2.predecessor != &vn1.Vnode {
+		t.Fatalf("unexpected pred")
+	}
+}
+
+func TestVnodeCheckDeadPred(t *testing.T) {
+	r := makeRing()
+	sort.Sort(r)
+
+	vn1 := r.vnodes[0]
+	vn2 := r.vnodes[1]
+	vn2.predecessor = &vn1.Vnode
+
+	// Deregister vn1
+	(r.transport.(*LocalTransport)).Deregister(&vn1.Vnode)
+
+	if err := vn2.checkPredecessor(); err != nil {
+		t.Fatalf("unexpected error! %s", err)
+	}
+	if vn2.predecessor != nil {
+		t.Fatalf("unexpected pred")
+	}
+}
