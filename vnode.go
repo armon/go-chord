@@ -50,7 +50,8 @@ func (vn *localVnode) stabilize() {
 	vn.timer = nil
 
 	// Check for shutdown
-	if vn.ring.shutdown {
+	if vn.ring.shutdown != nil {
+		vn.ring.shutdown <- true
 		return
 	}
 

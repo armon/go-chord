@@ -80,7 +80,7 @@ type Ring struct {
 	config    *Config
 	transport Transport
 	vnodes    []*localVnode
-	shutdown  bool
+	shutdown  chan bool
 }
 
 // Returns the default Ring configuration
@@ -120,9 +120,13 @@ func (*Ring) Leave() error {
 }
 
 // Shutdown shuts down the local processes in a given Chord ring
-func (r *Ring) Shutdown() error {
-	r.shutdown = true
-	return nil
+// Blocks until all the vnodes terminate.
+func (r *Ring) Shutdown() {
+	// Wait for all the vnodes to shutdown
+	r.shutdown = make(chan bool, r.config.NumVnodes)
+	for i := 0; i < r.config.NumVnodes; i++ {
+		<-r.shutdown
+	}
 }
 
 // Does a key lookup for up to N successors of a key

@@ -66,7 +66,7 @@ func TestGenId(t *testing.T) {
 func TestVnodeStabilizeShutdown(t *testing.T) {
 	vn := makeVnode()
 	vn.schedule()
-	vn.ring.shutdown = true
+	vn.ring.shutdown = make(chan bool, 1)
 	vn.stabilize()
 
 	if vn.timer != nil {
@@ -74,6 +74,12 @@ func TestVnodeStabilizeShutdown(t *testing.T) {
 	}
 	if !vn.stabilized.IsZero() {
 		t.Fatalf("unexpected time")
+	}
+	select {
+	case <-vn.ring.shutdown:
+		return
+	default:
+		t.Fatalf("expected message")
 	}
 }
 
