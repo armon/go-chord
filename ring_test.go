@@ -11,7 +11,9 @@ func makeRing() *Ring {
 	conf := &Config{
 		NumVnodes:     5,
 		NumSuccessors: 8,
-		HashFunc:      sha1.New}
+		HashFunc:      sha1.New,
+		HashBits:      160,
+	}
 
 	vnodes := make([]*localVnode, conf.NumVnodes)
 	trans := InitLocalTransport(nil)

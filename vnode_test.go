@@ -417,6 +417,42 @@ func TestVnodeNotifyNewPred(t *testing.T) {
 	}
 }
 
+func TestVnodeFixFinger(t *testing.T) {
+	r := makeRing()
+	sort.Sort(r)
+	num := len(r.vnodes)
+	for i := 0; i < num; i++ {
+		r.vnodes[i].init(i)
+		r.vnodes[i].successors[0] = &r.vnodes[(i+1)%num].Vnode
+	}
+
+	// Fix finger should not error
+	vn := r.vnodes[0]
+	if err := vn.fixFingerTable(); err != nil {
+		t.Fatalf("unexpected err, %s", err)
+	}
+
+	// Check we've progressed
+	if vn.last_finger != 158 {
+		t.Fatalf("unexpected last finger! %d", vn.last_finger)
+	}
+
+	// Ensure that we've setup our successor as the initial entries
+	for i := 0; i < vn.last_finger; i++ {
+		if vn.finger[i] != vn.successors[0] {
+			t.Fatalf("unexpected finger entry!")
+		}
+	}
+
+	// Fix next index
+	if err := vn.fixFingerTable(); err != nil {
+		t.Fatalf("unexpected err, %s", err)
+	}
+	if vn.last_finger != 0 {
+		t.Fatalf("unexpected last finger! %d", vn.last_finger)
+	}
+}
+
 func TestVnodeCheckPredNoPred(t *testing.T) {
 	v := makeVnode()
 	v.init(0)
