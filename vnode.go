@@ -154,6 +154,10 @@ func (vn *localVnode) notifySuccessor() error {
 		if s == nil {
 			break
 		}
+		// Ensure we don't set ourselves as a successor!
+		if s == nil || s.String() == vn.String() {
+			break
+		}
 		vn.successors[idx+1] = s
 	}
 	return nil

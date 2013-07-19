@@ -9,7 +9,6 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"hash"
-	"sort"
 	"time"
 )
 
@@ -100,34 +99,13 @@ func DefaultConfig(hostname string) *Config {
 
 // Creates a new Chord ring given the config and transport
 func Create(conf *Config, trans Transport) (*Ring, error) {
-	vnodes := make([]*localVnode, conf.NumVnodes)
-	trans = InitLocalTransport(trans)
-	ring := &Ring{conf, trans, vnodes, false}
-	for i := 0; i < conf.NumVnodes; i++ {
-		vn := &localVnode{}
-		vnodes[i] = vn
-		vn.ring = ring
-		if err := vn.init(i); err != nil {
-			return nil, err
-		}
+	// Create and initialize a ring
+	ring := &Ring{}
+	if err := ring.init(conf, trans); err != nil {
+		return nil, err
 	}
-
-	// Sort the vnodes
-	sort.Sort(ring)
-
-	// Setup each vnode successors
-	for i := 0; i < conf.NumVnodes; i++ {
-		if i == len(vnodes)-1 {
-			vnodes[i].successors[0] = &vnodes[0].Vnode
-		} else {
-			vnodes[i].successors[0] = &vnodes[i+1].Vnode
-		}
-	}
-
-	// Schedule each Vnode
-	for i := 0; i < conf.NumVnodes; i++ {
-		vnodes[i].schedule()
-	}
+	ring.setLocalSuccessors()
+	ring.schedule()
 	return ring, nil
 }
 

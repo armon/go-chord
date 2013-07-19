@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"sort"
 	"testing"
+	"time"
 )
 
 func makeRing() *Ring {
@@ -13,6 +14,8 @@ func makeRing() *Ring {
 		NumSuccessors: 8,
 		HashFunc:      sha1.New,
 		HashBits:      160,
+		StabilizeMin:  time.Second,
+		StabilizeMax:  5 * time.Second,
 	}
 
 	vnodes := make([]*localVnode, conf.NumVnodes)
@@ -25,6 +28,34 @@ func makeRing() *Ring {
 		vn.init(i)
 	}
 	return ring
+}
+
+func TestRingInit(t *testing.T) {
+	// Create a ring
+	ring := &Ring{}
+	conf := DefaultConfig("test")
+	ring.init(conf, nil)
+
+	// Test features
+	if ring.config != conf {
+		t.Fatalf("wrong config")
+	}
+	if ring.transport == nil {
+		t.Fatalf("missing transport")
+	}
+
+	// Check the vnodes
+	for i := 0; i < conf.NumVnodes; i++ {
+		if ring.vnodes[i] == nil {
+			t.Fatalf("missing vnode!")
+		}
+		if ring.vnodes[i].ring != ring {
+			t.Fatalf("ring missing!")
+		}
+		if ring.vnodes[i].Id == nil {
+			t.Fatalf("ID not initialized!")
+		}
+	}
 }
 
 func TestRingLen(t *testing.T) {
@@ -69,5 +100,45 @@ func TestRingNearest(t *testing.T) {
 	near = ring.nearestVnode(key)
 	if near != ring.vnodes[4] {
 		t.Fatalf("got wrong node back!")
+	}
+}
+
+func TestRingSchedule(t *testing.T) {
+	ring := makeRing()
+	ring.schedule()
+	for i := 0; i < len(ring.vnodes); i++ {
+		if ring.vnodes[i].timer == nil {
+			t.Fatalf("expected timer!")
+		}
+	}
+}
+
+func TestRingSetLocalSucc(t *testing.T) {
+	ring := makeRing()
+	ring.setLocalSuccessors()
+	for i := 0; i < len(ring.vnodes); i++ {
+		for j := 0; j < 4; j++ {
+			if ring.vnodes[i].successors[j] == nil {
+				t.Fatalf("expected successor!")
+			}
+		}
+		if ring.vnodes[i].successors[4] != nil {
+			t.Fatalf("should not have 5th successor!")
+		}
+	}
+
+	// Verify the successor manually for node 3
+	vn := ring.vnodes[2]
+	if vn.successors[0] != &ring.vnodes[3].Vnode {
+		t.Fatalf("bad succ!")
+	}
+	if vn.successors[1] != &ring.vnodes[4].Vnode {
+		t.Fatalf("bad succ!")
+	}
+	if vn.successors[2] != &ring.vnodes[0].Vnode {
+		t.Fatalf("bad succ!")
+	}
+	if vn.successors[3] != &ring.vnodes[1].Vnode {
+		t.Fatalf("bad succ!")
 	}
 }
