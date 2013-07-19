@@ -14,6 +14,9 @@ import (
 
 // Implements the methods needed for a Chord ring
 type Transport interface {
+	// Gets a list of the vnodes on the box
+	ListVnodes(string) ([]*Vnode, error)
+
 	// Ping a Vnode, check for liveness
 	Ping(*Vnode) (bool, error)
 

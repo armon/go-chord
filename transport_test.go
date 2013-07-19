@@ -40,6 +40,33 @@ func TestInitLocalTransport(t *testing.T) {
 	}
 }
 
+func TestLocalList(t *testing.T) {
+	l := makeLocal()
+	vn := &Vnode{Id: []byte{1}, Host: "test"}
+	mockVN := &MockVnodeRPC{}
+	l.Register(vn, mockVN)
+
+	list, err := l.ListVnodes("test")
+	if err != nil {
+		t.Fatalf("unexpected err. %s", err)
+	}
+	if len(list) != 1 || list[0] != vn {
+		t.Fatalf("local list failed", list)
+	}
+}
+
+func TestLocalListRemote(t *testing.T) {
+	l := makeLocal()
+	vn := &Vnode{Id: []byte{1}, Host: "test"}
+	mockVN := &MockVnodeRPC{}
+	l.Register(vn, mockVN)
+
+	_, err := l.ListVnodes("remote")
+	if err == nil {
+		t.Fatalf("expected err!")
+	}
+}
+
 func TestLocalPing(t *testing.T) {
 	l := makeLocal()
 	vn := &Vnode{Id: []byte{1}}
@@ -157,6 +184,14 @@ func TestLocalDeregister(t *testing.T) {
 	}
 }
 
+func TestBHList(t *testing.T) {
+	bh := BlackholeTransport{}
+	res, err := bh.ListVnodes("test")
+	if res != nil || err == nil {
+		t.Fatalf("expected fail")
+	}
+}
+
 func TestBHPing(t *testing.T) {
 	bh := BlackholeTransport{}
 	vn := &Vnode{Id: []byte{12}}
@@ -192,11 +227,4 @@ func TestBHFindSuccessors(t *testing.T) {
 	if err.Error()[:18] != "Failed to connect!" {
 		t.Fatalf("expected fail")
 	}
-}
-
-func TestBHRegister(t *testing.T) {
-	bh := BlackholeTransport{}
-	vn := &localVnode{}
-	vn.Id = []byte{12}
-	bh.Register(&vn.Vnode, vn)
 }

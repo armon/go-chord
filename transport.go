@@ -5,12 +5,19 @@ import (
 	"sync"
 )
 
+// Wraps vnode and object
+type localRPC struct {
+	vnode *Vnode
+	obj   VnodeRPC
+}
+
 // Provides fast routing to local Vnodes, uses another transport
 // for access to remove Vnodes
 type LocalTransport struct {
+	host   string
 	remote Transport
 	lock   sync.RWMutex
-	local  map[string]VnodeRPC
+	local  map[string]*localRPC
 }
 
 // Creates a local transport to wrap a remote transport
@@ -20,7 +27,7 @@ func InitLocalTransport(remote Transport) Transport {
 		remote = &BlackholeTransport{}
 	}
 
-	local := make(map[string]VnodeRPC)
+	local := make(map[string]*localRPC)
 	return &LocalTransport{remote: remote, local: local}
 }
 
@@ -29,8 +36,33 @@ func (lt *LocalTransport) get(vn *Vnode) (VnodeRPC, bool) {
 	key := vn.String()
 	lt.lock.RLock()
 	defer lt.lock.RUnlock()
-	obj, ok := lt.local[key]
-	return obj, ok
+	w, ok := lt.local[key]
+	if ok {
+		return w.obj, ok
+	} else {
+		return nil, ok
+	}
+}
+
+// Returns a list of vnodes
+func (lt *LocalTransport) ListVnodes(host string) ([]*Vnode, error) {
+	// Check if this is a local host
+	if host == lt.host {
+		// Generate all the local clients
+		res := make([]*Vnode, 0, len(lt.local))
+
+		// Build list
+		lt.lock.RLock()
+		for _, v := range lt.local {
+			res = append(res, v.vnode)
+		}
+		lt.lock.RUnlock()
+
+		return res, nil
+	}
+
+	// Pass onto remote
+	return lt.remote.ListVnodes(host)
 }
 
 // Ping a Vnode, check for liveness
@@ -95,7 +127,8 @@ func (lt *LocalTransport) Register(v *Vnode, o VnodeRPC) {
 	// Register local instance
 	key := v.String()
 	lt.lock.Lock()
-	lt.local[key] = o
+	lt.host = v.Host
+	lt.local[key] = &localRPC{v, o}
 	lt.lock.Unlock()
 
 	// Register with remote transport
@@ -112,6 +145,10 @@ func (lt *LocalTransport) Deregister(v *Vnode) {
 
 // Used to blackhole traffic
 type BlackholeTransport struct {
+}
+
+func (*BlackholeTransport) ListVnodes(host string) ([]*Vnode, error) {
+	return nil, fmt.Errorf("Failed to connect! Blackhole: %s.", host)
 }
 
 func (*BlackholeTransport) Ping(vn *Vnode) (bool, error) {
