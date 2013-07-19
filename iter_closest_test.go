@@ -29,28 +29,28 @@ func TestNextClosest(t *testing.T) {
 	cp.init(vn, k)
 
 	// Iterate until we are done
-	s1, err := cp.Next()
-	if s1 != v2 || err != nil {
+	s1 := cp.Next()
+	if s1 != v2 {
 		t.Fatalf("Expect v2. %v", s1)
 	}
 
-	s2, err := cp.Next()
-	if s2 != v1 || err != nil {
+	s2 := cp.Next()
+	if s2 != v1 {
 		t.Fatalf("Expect v1. %v", s2)
 	}
 
-	s3, err := cp.Next()
-	if s3 != v7 || err != nil {
+	s3 := cp.Next()
+	if s3 != v7 {
 		t.Fatalf("Expect v7. %v", s3)
 	}
 
-	s4, err := cp.Next()
-	if s4 != v6 || err != nil {
+	s4 := cp.Next()
+	if s4 != v6 {
 		t.Fatalf("Expect v6. %v", s4)
 	}
 
-	s5, err := cp.Next()
-	if s5 != nil || err != nil {
+	s5 := cp.Next()
+	if s5 != nil {
 		t.Fatalf("Expect nil. %v", s5)
 	}
 }
@@ -79,28 +79,28 @@ func TestNextClosestNoSucc(t *testing.T) {
 	cp.init(vn, k)
 
 	// Iterate until we are done
-	s1, err := cp.Next()
-	if s1 != v2 || err != nil {
+	s1 := cp.Next()
+	if s1 != v2 {
 		t.Fatalf("Expect v2. %v", s1)
 	}
 
-	s2, err := cp.Next()
-	if s2 != v1 || err != nil {
+	s2 := cp.Next()
+	if s2 != v1 {
 		t.Fatalf("Expect v1. %v", s2)
 	}
 
-	s3, err := cp.Next()
-	if s3 != v7 || err != nil {
+	s3 := cp.Next()
+	if s3 != v7 {
 		t.Fatalf("Expect v7. %v", s3)
 	}
 
-	s4, err := cp.Next()
-	if s4 != v6 || err != nil {
+	s4 := cp.Next()
+	if s4 != v6 {
 		t.Fatalf("Expect v6. %v", s4)
 	}
 
-	s5, err := cp.Next()
-	if s5 != nil || err != nil {
+	s5 := cp.Next()
+	if s5 != nil {
 		t.Fatalf("Expect nil. %v", s5)
 	}
 }
@@ -129,18 +129,18 @@ func TestNextClosestNoFinger(t *testing.T) {
 	cp.init(vn, k)
 
 	// Iterate until we are done
-	s3, err := cp.Next()
-	if s3 != v7 || err != nil {
+	s3 := cp.Next()
+	if s3 != v7 {
 		t.Fatalf("Expect v7. %v", s3)
 	}
 
-	s4, err := cp.Next()
-	if s4 != v6 || err != nil {
+	s4 := cp.Next()
+	if s4 != v6 {
 		t.Fatalf("Expect v6. %v", s4)
 	}
 
-	s5, err := cp.Next()
-	if s5 != nil || err != nil {
+	s5 := cp.Next()
+	if s5 != nil {
 		t.Fatalf("Expect nil. %v", s5)
 	}
 }

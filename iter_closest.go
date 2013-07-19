@@ -20,7 +20,7 @@ func (cp *ClosestPreceedingVnodeIterator) init(vn *localVnode, key []byte) {
 	cp.yielded = make(map[string]struct{})
 }
 
-func (cp *ClosestPreceedingVnodeIterator) Next() (*Vnode, error) {
+func (cp *ClosestPreceedingVnodeIterator) Next() *Vnode {
 	// Try to find each node
 	var successor_node *Vnode
 	var finger_node *Vnode
@@ -69,20 +69,20 @@ func (cp *ClosestPreceedingVnodeIterator) Next() (*Vnode, error) {
 			cp.finger_idx--
 		}
 		cp.yielded[closest.String()] = struct{}{}
-		return closest, nil
+		return closest
 
 	} else if successor_node != nil {
 		cp.successor_idx--
 		cp.yielded[successor_node.String()] = struct{}{}
-		return successor_node, nil
+		return successor_node
 
 	} else if finger_node != nil {
 		cp.finger_idx--
 		cp.yielded[finger_node.String()] = struct{}{}
-		return finger_node, nil
+		return finger_node
 	}
 
-	return nil, nil
+	return nil
 }
 
 // Returns the closest preceeding Vnode to the key

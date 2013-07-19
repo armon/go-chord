@@ -242,11 +242,9 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 	cp.init(vn, key)
 	for {
 		// Get the next closest node
-		closest, err := cp.Next()
+		closest := cp.Next()
 		if closest == nil {
 			break
-		} else if err != nil {
-			return nil, err
 		}
 
 		// Try that node, break on success
