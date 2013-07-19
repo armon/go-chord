@@ -495,3 +495,111 @@ func TestVnodeCheckDeadPred(t *testing.T) {
 		t.Fatalf("unexpected pred")
 	}
 }
+
+func TestVnodeFindSuccessors(t *testing.T) {
+	r := makeRing()
+	sort.Sort(r)
+	num := len(r.vnodes)
+	for i := 0; i < num; i++ {
+		r.vnodes[i].successors[0] = &r.vnodes[(i+1)%num].Vnode
+	}
+
+	// Get a random key
+	h := r.config.HashFunc()
+	h.Write([]byte("test"))
+	key := h.Sum(nil)
+
+	// Local only, should be nearest in the ring
+	nearest := r.nearestVnode(key)
+	exp := nearest.successors[0]
+
+	// Do a lookup on the key
+	for i := 0; i < len(r.vnodes); i++ {
+		vn := r.vnodes[i]
+		succ, err := vn.FindSuccessors(1, key)
+		if err != nil {
+			t.Fatalf("unexpected err! %s", err)
+		}
+
+		// Local only, should be nearest in the ring
+		if exp != succ[0] {
+			t.Fatalf("unexpected succ! K:%x Exp: %s Got:%s",
+				key, exp, succ[0])
+		}
+	}
+}
+
+// Ensure each node has multiple successors
+func TestVnodeFindSuccessorsMultSucc(t *testing.T) {
+	r := makeRing()
+	sort.Sort(r)
+	num := len(r.vnodes)
+	for i := 0; i < num; i++ {
+		r.vnodes[i].successors[0] = &r.vnodes[(i+1)%num].Vnode
+		r.vnodes[i].successors[1] = &r.vnodes[(i+2)%num].Vnode
+		r.vnodes[i].successors[2] = &r.vnodes[(i+3)%num].Vnode
+	}
+
+	// Get a random key
+	h := r.config.HashFunc()
+	h.Write([]byte("test"))
+	key := h.Sum(nil)
+
+	// Local only, should be nearest in the ring
+	nearest := r.nearestVnode(key)
+	exp := nearest.successors[0]
+
+	// Do a lookup on the key
+	for i := 0; i < len(r.vnodes); i++ {
+		vn := r.vnodes[i]
+		succ, err := vn.FindSuccessors(1, key)
+		if err != nil {
+			t.Fatalf("unexpected err! %s", err)
+		}
+
+		// Local only, should be nearest in the ring
+		if exp != succ[0] {
+			t.Fatalf("unexpected succ! K:%x Exp: %s Got:%s",
+				key, exp, succ[0])
+		}
+	}
+}
+
+// Kill off a part of the ring and see what happens
+func TestVnodeFindSuccessorsSomeDead(t *testing.T) {
+	r := makeRing()
+	sort.Sort(r)
+	num := len(r.vnodes)
+	for i := 0; i < num; i++ {
+		r.vnodes[i].successors[0] = &r.vnodes[(i+1)%num].Vnode
+		r.vnodes[i].successors[1] = &r.vnodes[(i+2)%num].Vnode
+	}
+
+	// Kill 2 of the nodes
+	(r.transport.(*LocalTransport)).Deregister(&r.vnodes[0].Vnode)
+	(r.transport.(*LocalTransport)).Deregister(&r.vnodes[3].Vnode)
+
+	// Get a random key
+	h := r.config.HashFunc()
+	h.Write([]byte("test"))
+	key := h.Sum(nil)
+
+	// Local only, should be nearest in the ring
+	nearest := r.nearestVnode(key)
+	exp := nearest.successors[0]
+
+	// Do a lookup on the key
+	for i := 0; i < len(r.vnodes); i++ {
+		vn := r.vnodes[i]
+		succ, err := vn.FindSuccessors(1, key)
+		if err != nil {
+			t.Fatalf("(%d) unexpected err! %s", i, err)
+		}
+
+		// Local only, should be nearest in the ring
+		if exp != succ[0] {
+			t.Fatalf("(%d) unexpected succ! K:%x Exp: %s Got:%s",
+				i, key, exp, succ[0])
+		}
+	}
+}

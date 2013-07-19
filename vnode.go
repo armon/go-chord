@@ -232,14 +232,9 @@ func (vn *localVnode) checkPredecessor() error {
 
 // Finds next N successors. N must be <= NumSuccessors
 func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
-	// Determine how many successors we know of
-	successors := vn.knownSuccessors()
-
-	// Check if the ID is between us and any successors
-	for i := 0; i < max(successors-n, 1); i++ {
-		if betweenRightIncl(vn.Id, vn.successors[i].Id, key) {
-			return vn.successors[i : i+n], nil
-		}
+	// Check if we are the immediate predecessor
+	if betweenRightIncl(vn.Id, vn.successors[0].Id, key) {
+		return vn.successors[:n], nil
 	}
 
 	// Try the closest preceeding nodes
@@ -249,7 +244,7 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 		// Get the next closest node
 		closest, err := cp.Next()
 		if closest == nil {
-			return nil, fmt.Errorf("Exhausted all preceeding nodes!")
+			break
 		} else if err != nil {
 			return nil, err
 		}
@@ -262,6 +257,23 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 			log.Printf("[ERR] Failed to contact %s. Got %s", closest.String(), err)
 		}
 	}
+
+	// Determine how many successors we know of
+	successors := vn.knownSuccessors()
+
+	// Check if the ID is between us and any non-immediate successors
+	for i := 1; i <= successors-n; i++ {
+		if betweenRightIncl(vn.Id, vn.successors[i].Id, key) {
+			remain := vn.successors[i:]
+			if len(remain) > n {
+				remain = remain[:n]
+			}
+			return remain, nil
+		}
+	}
+
+	// Checked all closer nodes and our successors!
+	return nil, fmt.Errorf("Exhausted all preceeding nodes!")
 }
 
 // Determine how many successors we know of
