@@ -1,6 +1,7 @@
 package chord
 
 import (
+	"errors"
 	"testing"
 	"time"
 )
@@ -144,5 +145,23 @@ func TestNearestVnodesKey(t *testing.T) {
 	near = nearestVnodeToKey(vnodes, key)
 	if near != vnodes[4] {
 		t.Fatalf("got wrong node back!")
+	}
+}
+
+func TestMergeErrors(t *testing.T) {
+	e1 := errors.New("test1")
+	e2 := errors.New("test2")
+
+	if mergeErrors(e1, nil) != e1 {
+		t.Fatalf("bad merge")
+	}
+	if mergeErrors(nil, e1) != e1 {
+		t.Fatalf("bad merge")
+	}
+	if mergeErrors(nil, nil) != nil {
+		t.Fatalf("bad merge")
+	}
+	if mergeErrors(e1, e2).Error() != "test1\ntest2" {
+		t.Fatalf("bad merge")
 	}
 }
