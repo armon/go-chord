@@ -29,6 +29,12 @@ type Transport interface {
 	// Find a successor
 	FindSuccessors(*Vnode, int, []byte) ([]*Vnode, error)
 
+	// Clears a predecessor if it matches a given vnode. Used to leave.
+	ClearPredecessor(target, self *Vnode) error
+
+	// Instructs a node to skip a given successor. Used to leave.
+	SkipSuccessor(target, self *Vnode) error
+
 	// Register for an RPC callbacks
 	Register(*Vnode, VnodeRPC)
 }
@@ -38,6 +44,8 @@ type VnodeRPC interface {
 	GetPredecessor() (*Vnode, error)
 	Notify(*Vnode) ([]*Vnode, error)
 	FindSuccessors(int, []byte) ([]*Vnode, error)
+	ClearPredecessor(*Vnode) error
+	SkipSuccessor(*Vnode) error
 }
 
 // Delegate to notify on ring events

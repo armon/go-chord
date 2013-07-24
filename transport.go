@@ -119,7 +119,34 @@ func (lt *LocalTransport) FindSuccessors(vn *Vnode, n int, key []byte) ([]*Vnode
 
 	// Pass onto remote
 	return lt.remote.FindSuccessors(vn, n, key)
+}
 
+// Clears a predecessor if it matches a given vnode. Used to leave.
+func (lt *LocalTransport) ClearPredecessor(target, self *Vnode) error {
+	// Look for it locally
+	obj, ok := lt.get(target)
+
+	// If it exists locally, handle it
+	if ok {
+		return obj.ClearPredecessor(self)
+	}
+
+	// Pass onto remote
+	return lt.remote.ClearPredecessor(target, self)
+}
+
+// Instructs a node to skip a given successor. Used to leave.
+func (lt *LocalTransport) SkipSuccessor(target, self *Vnode) error {
+	// Look for it locally
+	obj, ok := lt.get(target)
+
+	// If it exists locally, handle it
+	if ok {
+		return obj.SkipSuccessor(self)
+	}
+
+	// Pass onto remote
+	return lt.remote.SkipSuccessor(target, self)
 }
 
 // Register for an RPC callbacks
@@ -166,6 +193,16 @@ func (*BlackholeTransport) Notify(vn, self *Vnode) ([]*Vnode, error) {
 // Find a successor
 func (*BlackholeTransport) FindSuccessors(vn *Vnode, n int, key []byte) ([]*Vnode, error) {
 	return nil, fmt.Errorf("Failed to connect! Blackhole: %s", vn.String())
+}
+
+// Clears a predecessor if it matches a given vnode. Used to leave.
+func (*BlackholeTransport) ClearPredecessor(target, self *Vnode) error {
+	return fmt.Errorf("Failed to connect! Blackhole: %s", target.String())
+}
+
+// Instructs a node to skip a given successor. Used to leave.
+func (*BlackholeTransport) SkipSuccessor(target, self *Vnode) error {
+	return fmt.Errorf("Failed to connect! Blackhole: %s", target.String())
 }
 
 // Register for an RPC callbacks

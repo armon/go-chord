@@ -12,6 +12,7 @@ type MockVnodeRPC struct {
 	succ_list []*Vnode
 	key       []byte
 	succ      []*Vnode
+	skip      *Vnode
 }
 
 func (mv *MockVnodeRPC) GetPredecessor() (*Vnode, error) {
@@ -24,6 +25,16 @@ func (mv *MockVnodeRPC) Notify(vn *Vnode) ([]*Vnode, error) {
 func (mv *MockVnodeRPC) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 	mv.key = key
 	return mv.succ, mv.err
+}
+
+func (mv *MockVnodeRPC) ClearPredecessor(p *Vnode) error {
+	mv.pred = nil
+	return nil
+}
+
+func (mv *MockVnodeRPC) SkipSuccessor(s *Vnode) error {
+	mv.skip = s
+	return nil
 }
 
 func makeLocal() *LocalTransport {
@@ -170,6 +181,51 @@ func TestLocalFindSucc(t *testing.T) {
 	}
 }
 
+func TestLocalClearPred(t *testing.T) {
+	l := makeLocal()
+	pred := &Vnode{Id: []byte{10}}
+	mockVN := &MockVnodeRPC{pred: pred}
+	vn := &Vnode{Id: []byte{12}}
+	l.Register(vn, mockVN)
+
+	err := l.ClearPredecessor(vn, pred)
+	if err != nil {
+		t.Fatalf("local ClearPredecessor failed")
+	}
+	if mockVN.pred != nil {
+		t.Fatalf("clear failed")
+	}
+
+	unknown := &Vnode{Id: []byte{1}}
+	err = l.ClearPredecessor(unknown, pred)
+	if err == nil {
+		t.Fatalf("remote clear should fail")
+	}
+}
+
+func TestLocalSkipSucc(t *testing.T) {
+	l := makeLocal()
+	suc := []*Vnode{&Vnode{Id: []byte{40}}}
+	mockVN := &MockVnodeRPC{succ: suc}
+	vn := &Vnode{Id: []byte{12}}
+	l.Register(vn, mockVN)
+
+	s := &Vnode{Id: []byte{40}}
+	err := l.SkipSuccessor(vn, s)
+	if err != nil {
+		t.Fatalf("local Skip failed")
+	}
+	if mockVN.skip != s {
+		t.Fatalf("skip failed")
+	}
+
+	unknown := &Vnode{Id: []byte{1}}
+	err = l.SkipSuccessor(unknown, s)
+	if err == nil {
+		t.Fatalf("remote skip should fail")
+	}
+}
+
 func TestLocalDeregister(t *testing.T) {
 	l := makeLocal()
 	vn := &Vnode{Id: []byte{1}}
@@ -224,6 +280,26 @@ func TestBHFindSuccessors(t *testing.T) {
 	bh := BlackholeTransport{}
 	vn := &Vnode{Id: []byte{12}}
 	_, err := bh.FindSuccessors(vn, 1, []byte("test"))
+	if err.Error()[:18] != "Failed to connect!" {
+		t.Fatalf("expected fail")
+	}
+}
+
+func TestBHClearPred(t *testing.T) {
+	bh := BlackholeTransport{}
+	vn := &Vnode{Id: []byte{12}}
+	s := &Vnode{Id: []byte{50}}
+	err := bh.ClearPredecessor(vn, s)
+	if err.Error()[:18] != "Failed to connect!" {
+		t.Fatalf("expected fail")
+	}
+}
+
+func TestBHSkipSucc(t *testing.T) {
+	bh := BlackholeTransport{}
+	vn := &Vnode{Id: []byte{12}}
+	s := &Vnode{Id: []byte{50}}
+	err := bh.SkipSuccessor(vn, s)
 	if err.Error()[:18] != "Failed to connect!" {
 		t.Fatalf("expected fail")
 	}
