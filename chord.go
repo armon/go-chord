@@ -112,7 +112,44 @@ func Create(conf *Config, trans Transport) (*Ring, error) {
 
 // Joins an existing Chord ring
 func Join(conf *Config, trans Transport, existing string) (*Ring, error) {
-	return nil, nil
+	// Request a list of Vnodes from the remote host
+	hosts, err := trans.ListVnodes(existing)
+	if err != nil {
+		return nil, err
+	}
+	if hosts == nil || len(hosts) == 0 {
+		return nil, fmt.Errorf("Remote host has no vnodes!")
+	}
+
+	// Create a ring
+	ring := &Ring{}
+	ring.init(conf, trans)
+
+	// Acquire a live successor for each Vnode
+	for _, vn := range ring.vnodes {
+		// Get the nearest remote vnode
+		nearest := nearestVnodeToKey(hosts, vn.Id)
+
+		// Query for a list of successors to this Vnode
+		succs, err := trans.FindSuccessors(nearest, conf.NumSuccessors, vn.Id)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to find successor for vnodes! Got %s", err)
+		}
+		if succs == nil || len(succs) == 0 {
+			return nil, fmt.Errorf("Failed to find successor for vnodes! Got no vnodes!")
+		}
+
+		// Assign the successors
+		for idx, s := range succs {
+			vn.successors[idx] = s
+		}
+	}
+
+	// Do a fast stabilization, will schedule regular execution
+	for _, vn := range ring.vnodes {
+		vn.stabilize()
+	}
+	return ring, nil
 }
 
 // Leaves a given Chord ring
