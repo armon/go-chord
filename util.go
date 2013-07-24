@@ -87,3 +87,14 @@ func min(a, b int) int {
 		return b
 	}
 }
+
+// Returns the vnode nearest a key
+func nearestVnodeToKey(vnodes []*Vnode, key []byte) *Vnode {
+	for i := len(vnodes) - 1; i >= 0; i-- {
+		if bytes.Compare(vnodes[i].Id, key) == -1 {
+			return vnodes[i]
+		}
+	}
+	// Return the last vnode
+	return vnodes[len(vnodes)-1]
+}

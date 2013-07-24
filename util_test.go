@@ -125,3 +125,24 @@ func TestMin(t *testing.T) {
 		t.Fatalf("bad min")
 	}
 }
+
+func TestNearestVnodesKey(t *testing.T) {
+	vnodes := make([]*Vnode, 5)
+	vnodes[0] = &Vnode{Id: []byte{2}}
+	vnodes[1] = &Vnode{Id: []byte{4}}
+	vnodes[2] = &Vnode{Id: []byte{7}}
+	vnodes[3] = &Vnode{Id: []byte{10}}
+	vnodes[4] = &Vnode{Id: []byte{14}}
+	key := []byte{6}
+
+	near := nearestVnodeToKey(vnodes, key)
+	if near != vnodes[1] {
+		t.Fatalf("got wrong node back!")
+	}
+
+	key = []byte{0}
+	near = nearestVnodeToKey(vnodes, key)
+	if near != vnodes[4] {
+		t.Fatalf("got wrong node back!")
+	}
+}
