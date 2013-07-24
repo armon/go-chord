@@ -13,7 +13,7 @@ func (vn *Vnode) String() string {
 }
 
 // Initializes a local vnode
-func (vn *localVnode) init(idx int) error {
+func (vn *localVnode) init(idx int) {
 	// Generate an ID
 	vn.genId(uint16(idx))
 
@@ -23,7 +23,6 @@ func (vn *localVnode) init(idx int) error {
 
 	// Register with the RPC mechanism
 	vn.ring.transport.Register(&vn.Vnode, vn)
-	return nil
 }
 
 // Schedules the Vnode to do regular maintenence

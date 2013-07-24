@@ -5,7 +5,7 @@ import (
 	"sort"
 )
 
-func (r *Ring) init(conf *Config, trans Transport) error {
+func (r *Ring) init(conf *Config, trans Transport) {
 	// Set our variables
 	r.config = conf
 	r.vnodes = make([]*localVnode, conf.NumVnodes)
@@ -16,14 +16,11 @@ func (r *Ring) init(conf *Config, trans Transport) error {
 		vn := &localVnode{}
 		r.vnodes[i] = vn
 		vn.ring = r
-		if err := vn.init(i); err != nil {
-			return err
-		}
+		vn.init(i)
 	}
 
 	// Sort the vnodes
 	sort.Sort(r)
-	return nil
 }
 
 // Len is the number of vnodes

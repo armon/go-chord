@@ -104,9 +104,7 @@ func DefaultConfig(hostname string) *Config {
 func Create(conf *Config, trans Transport) (*Ring, error) {
 	// Create and initialize a ring
 	ring := &Ring{}
-	if err := ring.init(conf, trans); err != nil {
-		return nil, err
-	}
+	ring.init(conf, trans)
 	ring.setLocalSuccessors()
 	ring.schedule()
 	return ring, nil
