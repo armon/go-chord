@@ -278,6 +278,39 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 	return nil, fmt.Errorf("Exhausted all preceeding nodes!")
 }
 
+// Instructs the vnode to leave
+func (vn *localVnode) leave() error {
+	// Notify predecessor to advance to their next successor
+	var err error
+	trans := vn.ring.transport
+	if vn.predecessor != nil {
+		err = trans.SkipSuccessor(vn.predecessor, &vn.Vnode)
+	}
+
+	// Notify successor to clear old predecessor
+	err = mergeErrors(err, trans.ClearPredecessor(vn.successors[0], &vn.Vnode))
+	return err
+}
+
+// Used to clear our predecessor when a node is leaving
+func (vn *localVnode) ClearPredecessor(p *Vnode) error {
+	if vn.predecessor != nil && vn.predecessor.String() == p.String() {
+		vn.predecessor = nil
+	}
+	return nil
+}
+
+// Used to skip a successor when a node is leaving
+func (vn *localVnode) SkipSuccessor(s *Vnode) error {
+	// Skip if we have a match
+	if vn.successors[0].String() == s.String() {
+		known := vn.knownSuccessors()
+		copy(vn.successors[0:], vn.successors[1:])
+		vn.successors[known-1] = nil
+	}
+	return nil
+}
+
 // Determine how many successors we know of
 func (vn *localVnode) knownSuccessors() (successors int) {
 	for i := 0; i < len(vn.successors); i++ {

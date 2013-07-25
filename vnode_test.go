@@ -609,3 +609,76 @@ func TestVnodeFindSuccessorsSomeDead(t *testing.T) {
 		}
 	}
 }
+
+func TestVnodeClearPred(t *testing.T) {
+	v := makeVnode()
+	v.init(0)
+	p := &Vnode{Id: []byte{12}}
+	v.predecessor = p
+	v.ClearPredecessor(p)
+	if v.predecessor != nil {
+		t.Fatalf("expect no predecessor!")
+	}
+
+	np := &Vnode{Id: []byte{14}}
+	v.predecessor = p
+	v.ClearPredecessor(np)
+	if v.predecessor != p {
+		t.Fatalf("expect p predecessor!")
+	}
+}
+
+func TestVnodeSkipSucc(t *testing.T) {
+	v := makeVnode()
+	v.init(0)
+
+	s1 := &Vnode{Id: []byte{10}}
+	s2 := &Vnode{Id: []byte{11}}
+	s3 := &Vnode{Id: []byte{12}}
+
+	v.successors[0] = s1
+	v.successors[1] = s2
+	v.successors[2] = s3
+
+	// s2 should do nothing
+	if err := v.SkipSuccessor(s2); err != nil {
+		t.Fatalf("unexpected err")
+	}
+	if v.successors[0] != s1 {
+		t.Fatalf("unexpected suc")
+	}
+
+	// s1 should skip
+	if err := v.SkipSuccessor(s1); err != nil {
+		t.Fatalf("unexpected err")
+	}
+	if v.successors[0] != s2 {
+		t.Fatalf("unexpected suc")
+	}
+	if v.knownSuccessors() != 2 {
+		t.Fatalf("bad num of suc")
+	}
+}
+
+func TestVnodeLeave(t *testing.T) {
+	r := makeRing()
+	sort.Sort(r)
+	num := len(r.vnodes)
+	for i := int(0); i < num; i++ {
+		r.vnodes[i].predecessor = &r.vnodes[(i+num-1)%num].Vnode
+		r.vnodes[i].successors[0] = &r.vnodes[(i+1)%num].Vnode
+		r.vnodes[i].successors[1] = &r.vnodes[(i+2)%num].Vnode
+	}
+
+	// Make node 0 leave
+	if err := r.vnodes[0].leave(); err != nil {
+		t.Fatalf("unexpected err")
+	}
+
+	if r.vnodes[4].successors[0] != &r.vnodes[1].Vnode {
+		t.Fatalf("unexpected suc!")
+	}
+	if r.vnodes[1].predecessor != nil {
+		t.Fatalf("unexpected pred!")
+	}
+}
