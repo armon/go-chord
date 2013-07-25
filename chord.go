@@ -160,9 +160,17 @@ func Join(conf *Config, trans Transport, existing string) (*Ring, error) {
 	return ring, nil
 }
 
-// Leaves a given Chord ring
-func (*Ring) Leave() error {
-	return nil
+// Leaves a given Chord ring and shuts down the local vnodes
+func (r *Ring) Leave() error {
+	// Shutdown the ring first to avoid further stabilization runs
+	r.Shutdown()
+
+	// Instruct each vnode to leave
+	var err error
+	for _, vn := range r.vnodes {
+		err = mergeErrors(err, vn.leave())
+	}
+	return err
 }
 
 // Shutdown shuts down the local processes in a given Chord ring
