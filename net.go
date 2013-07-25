@@ -49,39 +49,39 @@ const (
 )
 
 type tcpHeader struct {
-	reqType int
+	ReqType int
 }
 
 // Potential body types
 type tcpBodyError struct {
-	err error
+	Err error
 }
 type tcpBodyString struct {
-	s string
+	S string
 }
 type tcpBodyVnode struct {
-	vn *Vnode
+	Vn *Vnode
 }
 type tcpBodyTwoVnode struct {
-	target *Vnode
-	vn     *Vnode
+	Target *Vnode
+	Vn     *Vnode
 }
 type tcpBodyFindSuc struct {
-	target *Vnode
-	num    int
-	key    []byte
+	Target *Vnode
+	Num    int
+	Key    []byte
 }
 type tcpBodyVnodeError struct {
-	vnode *Vnode
-	err   error
+	Vnode *Vnode
+	Err   error
 }
 type tcpBodyVnodeListError struct {
-	vnodes []*Vnode
-	err    error
+	Vnodes []*Vnode
+	Err    error
 }
 type tcpBodyBoolError struct {
-	b   bool
-	err error
+	B   bool
+	Err error
 }
 
 // Creates a new TCP transport on the given listen address with the
@@ -145,8 +145,6 @@ func (t *TCPTransport) getConn(host string) (*tcpOutConn, error) {
 		// Verify that the socket is valid. Might be closed.
 		if _, err := out.sock.Read(nil); err == nil {
 			return out, nil
-		} else {
-			log.Printf("[INFO] Socket closed by %s", host)
 		}
 	}
 
@@ -194,8 +192,8 @@ func (t *TCPTransport) ListVnodes(host string) ([]*Vnode, error) {
 	}
 
 	// Send a list command
-	out.header.reqType = tcpListReq
-	body := tcpBodyString{s: host}
+	out.header.ReqType = tcpListReq
+	body := tcpBodyString{S: host}
 	if err := out.enc.Encode(&out.header); err != nil {
 		return nil, err
 	}
@@ -211,7 +209,7 @@ func (t *TCPTransport) ListVnodes(host string) ([]*Vnode, error) {
 
 	// Return the connection
 	t.returnConn(out)
-	return resp.vnodes, resp.err
+	return resp.Vnodes, resp.Err
 }
 
 // Ping a Vnode, check for liveness
@@ -223,8 +221,8 @@ func (t *TCPTransport) Ping(vn *Vnode) (bool, error) {
 	}
 
 	// Send a list command
-	out.header.reqType = tcpPing
-	body := tcpBodyVnode{vn: vn}
+	out.header.ReqType = tcpPing
+	body := tcpBodyVnode{Vn: vn}
 	if err := out.enc.Encode(&out.header); err != nil {
 		return false, err
 	}
@@ -240,7 +238,7 @@ func (t *TCPTransport) Ping(vn *Vnode) (bool, error) {
 
 	// Return the connection
 	t.returnConn(out)
-	return resp.b, resp.err
+	return resp.B, resp.Err
 }
 
 // Request a nodes predecessor
@@ -252,8 +250,8 @@ func (t *TCPTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
 	}
 
 	// Send a list command
-	out.header.reqType = tcpGetPredReq
-	body := tcpBodyVnode{vn: vn}
+	out.header.ReqType = tcpGetPredReq
+	body := tcpBodyVnode{Vn: vn}
 	if err := out.enc.Encode(&out.header); err != nil {
 		return nil, err
 	}
@@ -269,7 +267,7 @@ func (t *TCPTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
 
 	// Return the connection
 	t.returnConn(out)
-	return resp.vnode, resp.err
+	return resp.Vnode, resp.Err
 }
 
 // Notify our successor of ourselves
@@ -281,8 +279,8 @@ func (t *TCPTransport) Notify(target, self *Vnode) ([]*Vnode, error) {
 	}
 
 	// Send a list command
-	out.header.reqType = tcpNotifyReq
-	body := tcpBodyTwoVnode{target: target, vn: self}
+	out.header.ReqType = tcpNotifyReq
+	body := tcpBodyTwoVnode{Target: target, Vn: self}
 	if err := out.enc.Encode(&out.header); err != nil {
 		return nil, err
 	}
@@ -298,7 +296,7 @@ func (t *TCPTransport) Notify(target, self *Vnode) ([]*Vnode, error) {
 
 	// Return the connection
 	t.returnConn(out)
-	return resp.vnodes, resp.err
+	return resp.Vnodes, resp.Err
 }
 
 // Find a successor
@@ -310,8 +308,8 @@ func (t *TCPTransport) FindSuccessors(vn *Vnode, n int, k []byte) ([]*Vnode, err
 	}
 
 	// Send a list command
-	out.header.reqType = tcpFindSucReq
-	body := tcpBodyFindSuc{target: vn, num: n, key: k}
+	out.header.ReqType = tcpFindSucReq
+	body := tcpBodyFindSuc{Target: vn, Num: n, Key: k}
 	if err := out.enc.Encode(&out.header); err != nil {
 		return nil, err
 	}
@@ -327,7 +325,7 @@ func (t *TCPTransport) FindSuccessors(vn *Vnode, n int, k []byte) ([]*Vnode, err
 
 	// Return the connection
 	t.returnConn(out)
-	return resp.vnodes, resp.err
+	return resp.Vnodes, resp.Err
 }
 
 // Clears a predecessor if it matches a given vnode. Used to leave.
@@ -339,8 +337,8 @@ func (t *TCPTransport) ClearPredecessor(target, self *Vnode) error {
 	}
 
 	// Send a list command
-	out.header.reqType = tcpClearPredReq
-	body := tcpBodyTwoVnode{target: target, vn: self}
+	out.header.ReqType = tcpClearPredReq
+	body := tcpBodyTwoVnode{Target: target, Vn: self}
 	if err := out.enc.Encode(&out.header); err != nil {
 		return err
 	}
@@ -356,7 +354,7 @@ func (t *TCPTransport) ClearPredecessor(target, self *Vnode) error {
 
 	// Return the connection
 	t.returnConn(out)
-	return resp.err
+	return resp.Err
 }
 
 // Instructs a node to skip a given successor. Used to leave.
@@ -368,8 +366,8 @@ func (t *TCPTransport) SkipSuccessor(target, self *Vnode) error {
 	}
 
 	// Send a list command
-	out.header.reqType = tcpSkipSucReq
-	body := tcpBodyTwoVnode{target: target, vn: self}
+	out.header.ReqType = tcpSkipSucReq
+	body := tcpBodyTwoVnode{Target: target, Vn: self}
 	if err := out.enc.Encode(&out.header); err != nil {
 		return err
 	}
@@ -385,7 +383,7 @@ func (t *TCPTransport) SkipSuccessor(target, self *Vnode) error {
 
 	// Return the connection
 	t.returnConn(out)
-	return resp.err
+	return resp.Err
 }
 
 // Register for an RPC callbacks
@@ -462,12 +460,14 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 	for {
 		// Get the header
 		if err := dec.Decode(&header); err != nil {
-			log.Printf("Failed to decode TCP header! Got %s", err)
+			if !t.shutdown && err.Error() != "EOF" {
+				log.Printf("Failed to decode TCP header! Got %s", err)
+			}
 			return
 		}
 
 		// Read in the body and process request
-		switch header.reqType {
+		switch header.ReqType {
 		case tcpPing:
 			body := tcpBodyVnode{}
 			if err := dec.Decode(&body); err != nil {
@@ -476,12 +476,12 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 			}
 
 			// Generate a response
-			_, ok := t.get(body.vn)
+			_, ok := t.get(body.Vn)
 			if ok {
-				sendResp = tcpBodyBoolError{b: ok, err: nil}
+				sendResp = tcpBodyBoolError{B: ok, Err: nil}
 			} else {
-				sendResp = tcpBodyBoolError{b: ok, err: fmt.Errorf("Target VN not found! Target %s:%s",
-					body.vn.Host, body.vn.String())}
+				sendResp = tcpBodyBoolError{B: ok, Err: fmt.Errorf("Target VN not found! Target %s:%s",
+					body.Vn.Host, body.Vn.String())}
 			}
 
 		case tcpListReq:
@@ -502,7 +502,7 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 			t.lock.RUnlock()
 
 			// Make response
-			sendResp = tcpBodyVnodeListError{vnodes: res}
+			sendResp = tcpBodyVnodeListError{Vnodes: trimSlice(res)}
 
 		case tcpGetPredReq:
 			body := tcpBodyVnode{}
@@ -512,16 +512,16 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 			}
 
 			// Generate a response
-			obj, ok := t.get(body.vn)
+			obj, ok := t.get(body.Vn)
 			resp := tcpBodyVnodeError{}
 			sendResp = &resp
 			if ok {
 				node, err := obj.GetPredecessor()
-				resp.vnode = node
-				resp.err = err
+				resp.Vnode = node
+				resp.Err = err
 			} else {
-				resp.err = fmt.Errorf("Target VN not found! Target %s:%s",
-					body.vn.Host, body.vn.String())
+				resp.Err = fmt.Errorf("Target VN not found! Target %s:%s",
+					body.Vn.Host, body.Vn.String())
 			}
 
 		case tcpNotifyReq:
@@ -532,16 +532,16 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 			}
 
 			// Generate a response
-			obj, ok := t.get(body.target)
+			obj, ok := t.get(body.Target)
 			resp := tcpBodyVnodeListError{}
 			sendResp = &resp
 			if ok {
-				nodes, err := obj.Notify(body.vn)
-				resp.vnodes = nodes
-				resp.err = err
+				nodes, err := obj.Notify(body.Vn)
+				resp.Vnodes = trimSlice(nodes)
+				resp.Err = err
 			} else {
-				resp.err = fmt.Errorf("Target VN not found! Target %s:%s",
-					body.target.Host, body.target.String())
+				resp.Err = fmt.Errorf("Target VN not found! Target %s:%s",
+					body.Target.Host, body.Target.String())
 			}
 
 		case tcpFindSucReq:
@@ -552,16 +552,16 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 			}
 
 			// Generate a response
-			obj, ok := t.get(body.target)
+			obj, ok := t.get(body.Target)
 			resp := tcpBodyVnodeListError{}
 			sendResp = &resp
 			if ok {
-				nodes, err := obj.FindSuccessors(body.num, body.key)
-				resp.vnodes = nodes
-				resp.err = err
+				nodes, err := obj.FindSuccessors(body.Num, body.Key)
+				resp.Vnodes = trimSlice(nodes)
+				resp.Err = err
 			} else {
-				resp.err = fmt.Errorf("Target VN not found! Target %s:%s",
-					body.target.Host, body.target.String())
+				resp.Err = fmt.Errorf("Target VN not found! Target %s:%s",
+					body.Target.Host, body.Target.String())
 			}
 
 		case tcpClearPredReq:
@@ -572,14 +572,14 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 			}
 
 			// Generate a response
-			obj, ok := t.get(body.target)
+			obj, ok := t.get(body.Target)
 			resp := tcpBodyError{}
 			sendResp = &resp
 			if ok {
-				resp.err = obj.ClearPredecessor(body.vn)
+				resp.Err = obj.ClearPredecessor(body.Vn)
 			} else {
-				resp.err = fmt.Errorf("Target VN not found! Target %s:%s",
-					body.target.Host, body.target.String())
+				resp.Err = fmt.Errorf("Target VN not found! Target %s:%s",
+					body.Target.Host, body.Target.String())
 			}
 
 		case tcpSkipSucReq:
@@ -590,18 +590,18 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 			}
 
 			// Generate a response
-			obj, ok := t.get(body.target)
+			obj, ok := t.get(body.Target)
 			resp := tcpBodyError{}
 			sendResp = &resp
 			if ok {
-				resp.err = obj.SkipSuccessor(body.vn)
+				resp.Err = obj.SkipSuccessor(body.Vn)
 			} else {
-				resp.err = fmt.Errorf("Target VN not found! Target %s:%s",
-					body.target.Host, body.target.String())
+				resp.Err = fmt.Errorf("Target VN not found! Target %s:%s",
+					body.Target.Host, body.Target.String())
 			}
 
 		default:
-			log.Printf("Unknown request type! Got %d", header.reqType)
+			log.Printf("Unknown request type! Got %d", header.ReqType)
 			return
 		}
 
@@ -611,4 +611,18 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 			return
 		}
 	}
+}
+
+// Trims the slice to remove nil elements
+func trimSlice(vn []*Vnode) []*Vnode {
+	if vn == nil {
+		return vn
+	}
+
+	// Find a non-nil index
+	idx := len(vn) - 1
+	for vn[idx] == nil {
+		idx--
+	}
+	return vn[:idx+1]
 }
