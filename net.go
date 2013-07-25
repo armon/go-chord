@@ -461,7 +461,7 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 		// Get the header
 		if err := dec.Decode(&header); err != nil {
 			if !t.shutdown && err.Error() != "EOF" {
-				log.Printf("Failed to decode TCP header! Got %s", err)
+				log.Printf("[ERR] Failed to decode TCP header! Got %s", err)
 			}
 			return
 		}
@@ -471,7 +471,7 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 		case tcpPing:
 			body := tcpBodyVnode{}
 			if err := dec.Decode(&body); err != nil {
-				log.Printf("Failed to decode TCP body! Got %s", err)
+				log.Printf("[ERR] Failed to decode TCP body! Got %s", err)
 				return
 			}
 
@@ -487,7 +487,7 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 		case tcpListReq:
 			body := tcpBodyString{}
 			if err := dec.Decode(&body); err != nil {
-				log.Printf("Failed to decode TCP body! Got %s", err)
+				log.Printf("[ERR] Failed to decode TCP body! Got %s", err)
 				return
 			}
 
@@ -507,7 +507,7 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 		case tcpGetPredReq:
 			body := tcpBodyVnode{}
 			if err := dec.Decode(&body); err != nil {
-				log.Printf("Failed to decode TCP body! Got %s", err)
+				log.Printf("[ERR] Failed to decode TCP body! Got %s", err)
 				return
 			}
 
@@ -527,7 +527,7 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 		case tcpNotifyReq:
 			body := tcpBodyTwoVnode{}
 			if err := dec.Decode(&body); err != nil {
-				log.Printf("Failed to decode TCP body! Got %s", err)
+				log.Printf("[ERR] Failed to decode TCP body! Got %s", err)
 				return
 			}
 
@@ -547,7 +547,7 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 		case tcpFindSucReq:
 			body := tcpBodyFindSuc{}
 			if err := dec.Decode(&body); err != nil {
-				log.Printf("Failed to decode TCP body! Got %s", err)
+				log.Printf("[ERR] Failed to decode TCP body! Got %s", err)
 				return
 			}
 
@@ -567,7 +567,7 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 		case tcpClearPredReq:
 			body := tcpBodyTwoVnode{}
 			if err := dec.Decode(&body); err != nil {
-				log.Printf("Failed to decode TCP body! Got %s", err)
+				log.Printf("[ERR] Failed to decode TCP body! Got %s", err)
 				return
 			}
 
@@ -585,7 +585,7 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 		case tcpSkipSucReq:
 			body := tcpBodyTwoVnode{}
 			if err := dec.Decode(&body); err != nil {
-				log.Printf("Failed to decode TCP body! Got %s", err)
+				log.Printf("[ERR] Failed to decode TCP body! Got %s", err)
 				return
 			}
 
@@ -601,13 +601,13 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 			}
 
 		default:
-			log.Printf("Unknown request type! Got %d", header.ReqType)
+			log.Printf("[ERR] Unknown request type! Got %d", header.ReqType)
 			return
 		}
 
 		// Send the response
 		if err := enc.Encode(sendResp); err != nil {
-			log.Printf("Failed to send TCP body! Got %s", err)
+			log.Printf("[ERR] Failed to send TCP body! Got %s", err)
 			return
 		}
 	}
