@@ -17,6 +17,9 @@ func (vn *localVnode) init(idx int) {
 	// Generate an ID
 	vn.genId(uint16(idx))
 
+	// Set our host
+	vn.Host = vn.ring.config.Hostname
+
 	// Initialize all state
 	vn.successors = make([]*Vnode, vn.ring.config.NumSuccessors)
 	vn.finger = make([]*Vnode, vn.ring.config.HashBits)
