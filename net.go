@@ -230,7 +230,11 @@ func (t *TCPTransport) ListVnodes(host string) ([]*Vnode, error) {
 
 		// Return the connection
 		t.returnConn(out)
-		respChan <- resp.Vnodes
+		if resp.Err == nil {
+			respChan <- resp.Vnodes
+		} else {
+			errChan <- resp.Err
+		}
 	}()
 
 	select {
@@ -277,7 +281,11 @@ func (t *TCPTransport) Ping(vn *Vnode) (bool, error) {
 
 		// Return the connection
 		t.returnConn(out)
-		respChan <- resp.B
+		if resp.Err == nil {
+			respChan <- resp.B
+		} else {
+			errChan <- resp.Err
+		}
 	}()
 
 	select {
@@ -323,7 +331,11 @@ func (t *TCPTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
 
 		// Return the connection
 		t.returnConn(out)
-		respChan <- resp.Vnode
+		if resp.Err == nil {
+			respChan <- resp.Vnode
+		} else {
+			errChan <- resp.Err
+		}
 	}()
 
 	select {
@@ -369,7 +381,11 @@ func (t *TCPTransport) Notify(target, self *Vnode) ([]*Vnode, error) {
 
 		// Return the connection
 		t.returnConn(out)
-		respChan <- resp.Vnodes
+		if resp.Err == nil {
+			respChan <- resp.Vnodes
+		} else {
+			errChan <- resp.Err
+		}
 	}()
 
 	select {
@@ -415,7 +431,11 @@ func (t *TCPTransport) FindSuccessors(vn *Vnode, n int, k []byte) ([]*Vnode, err
 
 		// Return the connection
 		t.returnConn(out)
-		respChan <- resp.Vnodes
+		if resp.Err == nil {
+			respChan <- resp.Vnodes
+		} else {
+			errChan <- resp.Err
+		}
 	}()
 
 	select {
@@ -461,7 +481,11 @@ func (t *TCPTransport) ClearPredecessor(target, self *Vnode) error {
 
 		// Return the connection
 		t.returnConn(out)
-		respChan <- true
+		if resp.Err == nil {
+			respChan <- true
+		} else {
+			errChan <- resp.Err
+		}
 	}()
 
 	select {
@@ -507,7 +531,11 @@ func (t *TCPTransport) SkipSuccessor(target, self *Vnode) error {
 
 		// Return the connection
 		t.returnConn(out)
-		respChan <- true
+		if resp.Err == nil {
+			respChan <- true
+		} else {
+			errChan <- resp.Err
+		}
 	}()
 
 	select {
