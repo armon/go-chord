@@ -251,25 +251,43 @@ func (t *TCPTransport) Ping(vn *Vnode) (bool, error) {
 		return false, err
 	}
 
-	// Send a list command
-	out.header.ReqType = tcpPing
-	body := tcpBodyVnode{Vn: vn}
-	if err := out.enc.Encode(&out.header); err != nil {
-		return false, err
-	}
-	if err := out.enc.Encode(&body); err != nil {
-		return false, err
-	}
+	// Response channels
+	respChan := make(chan bool, 1)
+	errChan := make(chan error, 1)
 
-	// Read in the response
-	resp := tcpBodyBoolError{}
-	if err := out.dec.Decode(&resp); err != nil {
-		return false, err
-	}
+	go func() {
+		// Send a list command
+		out.header.ReqType = tcpPing
+		body := tcpBodyVnode{Vn: vn}
+		if err := out.enc.Encode(&out.header); err != nil {
+			errChan <- err
+			return
+		}
+		if err := out.enc.Encode(&body); err != nil {
+			errChan <- err
+			return
+		}
 
-	// Return the connection
-	t.returnConn(out)
-	return resp.B, resp.Err
+		// Read in the response
+		resp := tcpBodyBoolError{}
+		if err := out.dec.Decode(&resp); err != nil {
+			errChan <- err
+			return
+		}
+
+		// Return the connection
+		t.returnConn(out)
+		respChan <- resp.B
+	}()
+
+	select {
+	case <-time.After(t.timeout):
+		return false, fmt.Errorf("Command timed out!")
+	case err := <-errChan:
+		return false, err
+	case res := <-respChan:
+		return res, nil
+	}
 }
 
 // Request a nodes predecessor
