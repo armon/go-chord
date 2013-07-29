@@ -298,25 +298,42 @@ func (t *TCPTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
 		return nil, err
 	}
 
-	// Send a list command
-	out.header.ReqType = tcpGetPredReq
-	body := tcpBodyVnode{Vn: vn}
-	if err := out.enc.Encode(&out.header); err != nil {
-		return nil, err
-	}
-	if err := out.enc.Encode(&body); err != nil {
-		return nil, err
-	}
+	respChan := make(chan *Vnode, 1)
+	errChan := make(chan error, 1)
 
-	// Read in the response
-	resp := tcpBodyVnodeError{}
-	if err := out.dec.Decode(&resp); err != nil {
-		return nil, err
-	}
+	go func() {
+		// Send a list command
+		out.header.ReqType = tcpGetPredReq
+		body := tcpBodyVnode{Vn: vn}
+		if err := out.enc.Encode(&out.header); err != nil {
+			errChan <- err
+			return
+		}
+		if err := out.enc.Encode(&body); err != nil {
+			errChan <- err
+			return
+		}
 
-	// Return the connection
-	t.returnConn(out)
-	return resp.Vnode, resp.Err
+		// Read in the response
+		resp := tcpBodyVnodeError{}
+		if err := out.dec.Decode(&resp); err != nil {
+			errChan <- err
+			return
+		}
+
+		// Return the connection
+		t.returnConn(out)
+		respChan <- resp.Vnode
+	}()
+
+	select {
+	case <-time.After(t.timeout):
+		return nil, fmt.Errorf("Command timed out!")
+	case err := <-errChan:
+		return nil, err
+	case res := <-respChan:
+		return res, nil
+	}
 }
 
 // Notify our successor of ourselves
@@ -327,25 +344,42 @@ func (t *TCPTransport) Notify(target, self *Vnode) ([]*Vnode, error) {
 		return nil, err
 	}
 
-	// Send a list command
-	out.header.ReqType = tcpNotifyReq
-	body := tcpBodyTwoVnode{Target: target, Vn: self}
-	if err := out.enc.Encode(&out.header); err != nil {
-		return nil, err
-	}
-	if err := out.enc.Encode(&body); err != nil {
-		return nil, err
-	}
+	respChan := make(chan []*Vnode, 1)
+	errChan := make(chan error, 1)
 
-	// Read in the response
-	resp := tcpBodyVnodeListError{}
-	if err := out.dec.Decode(&resp); err != nil {
-		return nil, err
-	}
+	go func() {
+		// Send a list command
+		out.header.ReqType = tcpNotifyReq
+		body := tcpBodyTwoVnode{Target: target, Vn: self}
+		if err := out.enc.Encode(&out.header); err != nil {
+			errChan <- err
+			return
+		}
+		if err := out.enc.Encode(&body); err != nil {
+			errChan <- err
+			return
+		}
 
-	// Return the connection
-	t.returnConn(out)
-	return resp.Vnodes, resp.Err
+		// Read in the response
+		resp := tcpBodyVnodeListError{}
+		if err := out.dec.Decode(&resp); err != nil {
+			errChan <- err
+			return
+		}
+
+		// Return the connection
+		t.returnConn(out)
+		respChan <- resp.Vnodes
+	}()
+
+	select {
+	case <-time.After(t.timeout):
+		return nil, fmt.Errorf("Command timed out!")
+	case err := <-errChan:
+		return nil, err
+	case res := <-respChan:
+		return res, nil
+	}
 }
 
 // Find a successor
@@ -356,25 +390,42 @@ func (t *TCPTransport) FindSuccessors(vn *Vnode, n int, k []byte) ([]*Vnode, err
 		return nil, err
 	}
 
-	// Send a list command
-	out.header.ReqType = tcpFindSucReq
-	body := tcpBodyFindSuc{Target: vn, Num: n, Key: k}
-	if err := out.enc.Encode(&out.header); err != nil {
-		return nil, err
-	}
-	if err := out.enc.Encode(&body); err != nil {
-		return nil, err
-	}
+	respChan := make(chan []*Vnode, 1)
+	errChan := make(chan error, 1)
 
-	// Read in the response
-	resp := tcpBodyVnodeListError{}
-	if err := out.dec.Decode(&resp); err != nil {
-		return nil, err
-	}
+	go func() {
+		// Send a list command
+		out.header.ReqType = tcpFindSucReq
+		body := tcpBodyFindSuc{Target: vn, Num: n, Key: k}
+		if err := out.enc.Encode(&out.header); err != nil {
+			errChan <- err
+			return
+		}
+		if err := out.enc.Encode(&body); err != nil {
+			errChan <- err
+			return
+		}
 
-	// Return the connection
-	t.returnConn(out)
-	return resp.Vnodes, resp.Err
+		// Read in the response
+		resp := tcpBodyVnodeListError{}
+		if err := out.dec.Decode(&resp); err != nil {
+			errChan <- err
+			return
+		}
+
+		// Return the connection
+		t.returnConn(out)
+		respChan <- resp.Vnodes
+	}()
+
+	select {
+	case <-time.After(t.timeout):
+		return nil, fmt.Errorf("Command timed out!")
+	case err := <-errChan:
+		return nil, err
+	case res := <-respChan:
+		return res, nil
+	}
 }
 
 // Clears a predecessor if it matches a given vnode. Used to leave.
@@ -385,25 +436,42 @@ func (t *TCPTransport) ClearPredecessor(target, self *Vnode) error {
 		return err
 	}
 
-	// Send a list command
-	out.header.ReqType = tcpClearPredReq
-	body := tcpBodyTwoVnode{Target: target, Vn: self}
-	if err := out.enc.Encode(&out.header); err != nil {
-		return err
-	}
-	if err := out.enc.Encode(&body); err != nil {
-		return err
-	}
+	respChan := make(chan bool, 1)
+	errChan := make(chan error, 1)
 
-	// Read in the response
-	resp := tcpBodyError{}
-	if err := out.dec.Decode(&resp); err != nil {
-		return err
-	}
+	go func() {
+		// Send a list command
+		out.header.ReqType = tcpClearPredReq
+		body := tcpBodyTwoVnode{Target: target, Vn: self}
+		if err := out.enc.Encode(&out.header); err != nil {
+			errChan <- err
+			return
+		}
+		if err := out.enc.Encode(&body); err != nil {
+			errChan <- err
+			return
+		}
 
-	// Return the connection
-	t.returnConn(out)
-	return resp.Err
+		// Read in the response
+		resp := tcpBodyError{}
+		if err := out.dec.Decode(&resp); err != nil {
+			errChan <- err
+			return
+		}
+
+		// Return the connection
+		t.returnConn(out)
+		respChan <- true
+	}()
+
+	select {
+	case <-time.After(t.timeout):
+		return fmt.Errorf("Command timed out!")
+	case err := <-errChan:
+		return err
+	case <-respChan:
+		return nil
+	}
 }
 
 // Instructs a node to skip a given successor. Used to leave.
@@ -414,25 +482,42 @@ func (t *TCPTransport) SkipSuccessor(target, self *Vnode) error {
 		return err
 	}
 
-	// Send a list command
-	out.header.ReqType = tcpSkipSucReq
-	body := tcpBodyTwoVnode{Target: target, Vn: self}
-	if err := out.enc.Encode(&out.header); err != nil {
-		return err
-	}
-	if err := out.enc.Encode(&body); err != nil {
-		return err
-	}
+	respChan := make(chan bool, 1)
+	errChan := make(chan error, 1)
 
-	// Read in the response
-	resp := tcpBodyError{}
-	if err := out.dec.Decode(&resp); err != nil {
-		return err
-	}
+	go func() {
+		// Send a list command
+		out.header.ReqType = tcpSkipSucReq
+		body := tcpBodyTwoVnode{Target: target, Vn: self}
+		if err := out.enc.Encode(&out.header); err != nil {
+			errChan <- err
+			return
+		}
+		if err := out.enc.Encode(&body); err != nil {
+			errChan <- err
+			return
+		}
 
-	// Return the connection
-	t.returnConn(out)
-	return resp.Err
+		// Read in the response
+		resp := tcpBodyError{}
+		if err := out.dec.Decode(&resp); err != nil {
+			errChan <- err
+			return
+		}
+
+		// Return the connection
+		t.returnConn(out)
+		respChan <- true
+	}()
+
+	select {
+	case <-time.After(t.timeout):
+		return fmt.Errorf("Command timed out!")
+	case err := <-errChan:
+		return err
+	case <-respChan:
+		return nil
+	}
 }
 
 // Register for an RPC callbacks
