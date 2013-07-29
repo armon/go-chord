@@ -205,25 +205,42 @@ func (t *TCPTransport) ListVnodes(host string) ([]*Vnode, error) {
 		return nil, err
 	}
 
-	// Send a list command
-	out.header.ReqType = tcpListReq
-	body := tcpBodyString{S: host}
-	if err := out.enc.Encode(&out.header); err != nil {
-		return nil, err
-	}
-	if err := out.enc.Encode(&body); err != nil {
-		return nil, err
-	}
+	// Response channels
+	respChan := make(chan []*Vnode, 1)
+	errChan := make(chan error, 1)
 
-	// Read in the response
-	resp := tcpBodyVnodeListError{}
-	if err := out.dec.Decode(&resp); err != nil {
-		return nil, err
-	}
+	go func() {
+		// Send a list command
+		out.header.ReqType = tcpListReq
+		body := tcpBodyString{S: host}
+		if err := out.enc.Encode(&out.header); err != nil {
+			errChan <- err
+			return
+		}
+		if err := out.enc.Encode(&body); err != nil {
+			errChan <- err
+			return
+		}
 
-	// Return the connection
-	t.returnConn(out)
-	return resp.Vnodes, resp.Err
+		// Read in the response
+		resp := tcpBodyVnodeListError{}
+		if err := out.dec.Decode(&resp); err != nil {
+			errChan <- err
+		}
+
+		// Return the connection
+		t.returnConn(out)
+		respChan <- resp.Vnodes
+	}()
+
+	select {
+	case <-time.After(t.timeout):
+		return nil, fmt.Errorf("Command timed out!")
+	case err := <-errChan:
+		return nil, err
+	case res := <-respChan:
+		return res, nil
+	}
 }
 
 // Ping a Vnode, check for liveness
