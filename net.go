@@ -22,6 +22,7 @@ import (
 type TCPTransport struct {
 	sock     *net.TCPListener
 	timeout  time.Duration
+	maxIdle  time.Duration
 	lock     sync.RWMutex
 	local    map[string]*localRPC
 	inbound  map[*net.TCPConn]struct{}
@@ -36,6 +37,7 @@ type tcpOutConn struct {
 	header tcpHeader
 	enc    *gob.Encoder
 	dec    *gob.Decoder
+	used   time.Time
 }
 
 const (
@@ -98,15 +100,22 @@ func InitTCPTransport(listen string, timeout time.Duration) (*TCPTransport, erro
 	inbound := make(map[*net.TCPConn]struct{})
 	pool := make(map[string][]*tcpOutConn)
 
+	// Maximum age of a connection
+	maxIdle := time.Duration(300 * time.Second)
+
 	// Setup the transport
 	tcp := &TCPTransport{sock: sock.(*net.TCPListener),
 		timeout: timeout,
+		maxIdle: maxIdle,
 		local:   local,
 		inbound: inbound,
 		pool:    pool}
 
 	// Listen for connections
 	go tcp.listen()
+
+	// Reap old connections
+	go tcp.reapOld()
 
 	// Done
 	return tcp, nil
@@ -159,14 +168,19 @@ func (t *TCPTransport) getConn(host string) (*tcpOutConn, error) {
 	t.setupConn(sock)
 	enc := gob.NewEncoder(sock)
 	dec := gob.NewDecoder(sock)
+	now := time.Now()
 
 	// Wrap the sock
-	out = &tcpOutConn{host: host, sock: sock, enc: enc, dec: dec}
+	out = &tcpOutConn{host: host, sock: sock, enc: enc, dec: dec, used: now}
 	return out, nil
 }
 
 // Returns an outbound TCP connection to the pool
 func (t *TCPTransport) returnConn(o *tcpOutConn) {
+	// Update the last used time
+	o.used = time.Now()
+
+	// Push back into the pool
 	t.poolLock.Lock()
 	defer t.poolLock.Unlock()
 	if t.shutdown {
@@ -415,6 +429,32 @@ func (t *TCPTransport) Shutdown() {
 	}
 	t.pool = nil
 	t.poolLock.Unlock()
+}
+
+// Closes old outbound connections
+func (t *TCPTransport) reapOld() {
+	for {
+		time.Sleep(30 * time.Second)
+		t.reapOnce()
+	}
+}
+
+func (t *TCPTransport) reapOnce() {
+	t.poolLock.Lock()
+	defer t.poolLock.Unlock()
+	for host, conns := range t.pool {
+		max := len(conns)
+		for i := 0; i < max; i++ {
+			if time.Since(conns[i].used) > t.maxIdle {
+				conns[i].sock.Close()
+				conns[i], conns[max-1] = conns[max-1], nil
+				max--
+				i--
+			}
+		}
+		// Trim any idle conns
+		t.pool[host] = conns[:max]
+	}
 }
 
 // Listens for inbound connections
