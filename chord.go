@@ -50,10 +50,10 @@ type VnodeRPC interface {
 
 // Delegate to notify on ring events
 type Delegate interface {
-	NewSuccessor(local *Vnode, remoteNew *Vnode, remotePrev *Vnode)
-	NewPredecessor(local *Vnode, remoteNew *Vnode, remotePrev *Vnode)
-	PredecessorLeaving(local *Vnode, remote *Vnode)
-	SuccessorLeaving(local *Vnode, remote *Vnode)
+	NewPredecessor(local, remoteNew, remotePrev *Vnode)
+	Leaving(local, pred, succ *Vnode)
+	PredecessorLeaving(local, remote *Vnode)
+	SuccessorLeaving(local, remote *Vnode)
 	Shutdown()
 }
 

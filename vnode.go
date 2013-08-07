@@ -170,6 +170,13 @@ func (vn *localVnode) notifySuccessor() error {
 func (vn *localVnode) Notify(maybe_pred *Vnode) ([]*Vnode, error) {
 	// Check if we should update our predecessor
 	if vn.predecessor == nil || between(vn.predecessor.Id, vn.Id, maybe_pred.Id) {
+		// Inform the delegate
+		conf := vn.ring.config
+		old := vn.predecessor
+		vn.ring.invokeDelegate(func() {
+			conf.Delegate.NewPredecessor(&vn.Vnode, maybe_pred, old)
+		})
+
 		vn.predecessor = maybe_pred
 	}
 
@@ -283,6 +290,14 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 
 // Instructs the vnode to leave
 func (vn *localVnode) leave() error {
+	// Inform the delegate we are leaving
+	conf := vn.ring.config
+	pred := vn.predecessor
+	succ := vn.successors[0]
+	vn.ring.invokeDelegate(func() {
+		conf.Delegate.Leaving(&vn.Vnode, pred, succ)
+	})
+
 	// Notify predecessor to advance to their next successor
 	var err error
 	trans := vn.ring.transport
@@ -298,6 +313,12 @@ func (vn *localVnode) leave() error {
 // Used to clear our predecessor when a node is leaving
 func (vn *localVnode) ClearPredecessor(p *Vnode) error {
 	if vn.predecessor != nil && vn.predecessor.String() == p.String() {
+		// Inform the delegate
+		conf := vn.ring.config
+		old := vn.predecessor
+		vn.ring.invokeDelegate(func() {
+			conf.Delegate.PredecessorLeaving(&vn.Vnode, old)
+		})
 		vn.predecessor = nil
 	}
 	return nil
@@ -307,6 +328,13 @@ func (vn *localVnode) ClearPredecessor(p *Vnode) error {
 func (vn *localVnode) SkipSuccessor(s *Vnode) error {
 	// Skip if we have a match
 	if vn.successors[0].String() == s.String() {
+		// Inform the delegate
+		conf := vn.ring.config
+		old := vn.successors[0]
+		vn.ring.invokeDelegate(func() {
+			conf.Delegate.SuccessorLeaving(&vn.Vnode, old)
+		})
+
 		known := vn.knownSuccessors()
 		copy(vn.successors[0:], vn.successors[1:])
 		vn.successors[known-1] = nil
