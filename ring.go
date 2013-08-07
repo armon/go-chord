@@ -92,7 +92,6 @@ func (r *Ring) setLocalSuccessors() {
 
 // Invokes a function on the delegate and returns completion channel
 func (r *Ring) invokeDelegate(f func()) chan struct{} {
-	// Bail if no delegate
 	if r.config.Delegate == nil {
 		return nil
 	}
@@ -105,7 +104,6 @@ func (r *Ring) invokeDelegate(f func()) chan struct{} {
 		f()
 	}
 
-	// Send to the delegate
 	r.delegateCh <- wrapper
 	return ch
 }
@@ -113,28 +111,20 @@ func (r *Ring) invokeDelegate(f func()) chan struct{} {
 // This handler runs in a go routine to invoke methods on the delegate
 func (r *Ring) delegateHandler() {
 	for {
-		// Get a function
 		f, ok := <-r.delegateCh
-
-		// Check if we are shutting down
 		if !ok {
 			break
 		}
-
-		// Safely invoke this
 		r.safeInvoke(f)
 	}
 }
 
 // Called to safely call a function on the delegate
 func (r *Ring) safeInvoke(f func()) {
-	// Catch a potential panic
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("Caught a panic invoking a delegate function! Got: %s", r)
 		}
 	}()
-
-	// Invoke the function
 	f()
 }
