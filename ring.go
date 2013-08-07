@@ -2,6 +2,7 @@ package chord
 
 import (
 	"bytes"
+	"log"
 	"sort"
 )
 
@@ -10,6 +11,7 @@ func (r *Ring) init(conf *Config, trans Transport) {
 	r.config = conf
 	r.vnodes = make([]*localVnode, conf.NumVnodes)
 	r.transport = InitLocalTransport(trans)
+	r.delegateCh = make(chan func(), 32)
 
 	// Initializes the vnodes
 	for i := 0; i < conf.NumVnodes; i++ {
@@ -52,8 +54,28 @@ func (r *Ring) nearestVnode(key []byte) *localVnode {
 
 // Schedules each vnode in the ring
 func (r *Ring) schedule() {
+	if r.config.Delegate != nil {
+		go r.delegateHandler()
+	}
 	for i := 0; i < len(r.vnodes); i++ {
 		r.vnodes[i].schedule()
+	}
+}
+
+// Wait for all the vnodes to shutdown
+func (r *Ring) stopVnodes() {
+	r.shutdown = make(chan bool, r.config.NumVnodes)
+	for i := 0; i < r.config.NumVnodes; i++ {
+		<-r.shutdown
+	}
+}
+
+// Stops the delegate handler
+func (r *Ring) stopDelegate() {
+	if r.config.Delegate != nil {
+		// Wait for all delegate messages to be processed
+		<-r.invokeDelegate(r.config.Delegate.Shutdown)
+		close(r.delegateCh)
 	}
 }
 
@@ -66,4 +88,53 @@ func (r *Ring) setLocalSuccessors() {
 			vnode.successors[i] = &r.vnodes[(idx+i+1)%numV].Vnode
 		}
 	}
+}
+
+// Invokes a function on the delegate and returns completion channel
+func (r *Ring) invokeDelegate(f func()) chan struct{} {
+	// Bail if no delegate
+	if r.config.Delegate == nil {
+		return nil
+	}
+
+	ch := make(chan struct{}, 1)
+	wrapper := func() {
+		defer func() {
+			ch <- struct{}{}
+		}()
+		f()
+	}
+
+	// Send to the delegate
+	r.delegateCh <- wrapper
+	return ch
+}
+
+// This handler runs in a go routine to invoke methods on the delegate
+func (r *Ring) delegateHandler() {
+	for {
+		// Get a function
+		f, ok := <-r.delegateCh
+
+		// Check if we are shutting down
+		if !ok {
+			break
+		}
+
+		// Safely invoke this
+		r.safeInvoke(f)
+	}
+}
+
+// Called to safely call a function on the delegate
+func (r *Ring) safeInvoke(f func()) {
+	// Catch a potential panic
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("Caught a panic invoking a delegate function! Got: %s", r)
+		}
+	}()
+
+	// Invoke the function
+	f()
 }

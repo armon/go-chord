@@ -54,6 +54,7 @@ type Delegate interface {
 	NewPredecessor(local *Vnode, remoteNew *Vnode, remotePrev *Vnode)
 	PredecessorLeaving(local *Vnode, remote *Vnode)
 	SuccessorLeaving(local *Vnode, remote *Vnode)
+	Shutdown()
 }
 
 // Configuration for Chord nodes
@@ -88,10 +89,11 @@ type localVnode struct {
 
 // Stores the state required for a Chord ring
 type Ring struct {
-	config    *Config
-	transport Transport
-	vnodes    []*localVnode
-	shutdown  chan bool
+	config     *Config
+	transport  Transport
+	vnodes     []*localVnode
+	delegateCh chan func()
+	shutdown   chan bool
 }
 
 // Returns the default Ring configuration
@@ -162,25 +164,25 @@ func Join(conf *Config, trans Transport, existing string) (*Ring, error) {
 
 // Leaves a given Chord ring and shuts down the local vnodes
 func (r *Ring) Leave() error {
-	// Shutdown the ring first to avoid further stabilization runs
-	r.Shutdown()
+	// Shutdown the vnodes first to avoid further stabilization runs
+	r.stopVnodes()
 
 	// Instruct each vnode to leave
 	var err error
 	for _, vn := range r.vnodes {
 		err = mergeErrors(err, vn.leave())
 	}
+
+	// Wait for the delegate callbacks to complete
+	r.stopDelegate()
 	return err
 }
 
 // Shutdown shuts down the local processes in a given Chord ring
 // Blocks until all the vnodes terminate.
 func (r *Ring) Shutdown() {
-	// Wait for all the vnodes to shutdown
-	r.shutdown = make(chan bool, r.config.NumVnodes)
-	for i := 0; i < r.config.NumVnodes; i++ {
-		<-r.shutdown
-	}
+	r.stopVnodes()
+	r.stopDelegate()
 }
 
 // Does a key lookup for up to N successors of a key
