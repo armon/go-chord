@@ -9,16 +9,16 @@ import (
 	"time"
 )
 
-/**
- * The TCPTransport provides a TCP based Chord transport layer. This allows Chord
- * to be implemented over a network, instead of only using the LocalTransport. It is
- * meant to be a simple implementation, optimizing for simplicity instead of performance.
- * Messages are sent with a header frame, followed by a body frame. All data is encoded
- * using the GOB format for simplicity.
- *
- * Internally, there is 1 Goroutine listening for inbound connections, 1 Goroutine PER
- * inbound connection.
- */
+/*
+TCPTransport provides a TCP based Chord transport layer. This allows Chord
+to be implemented over a network, instead of only using the LocalTransport. It is
+meant to be a simple implementation, optimizing for simplicity instead of performance.
+Messages are sent with a header frame, followed by a body frame. All data is encoded
+using the GOB format for simplicity.
+
+Internally, there is 1 Goroutine listening for inbound connections, 1 Goroutine PER
+inbound connection.
+*/
 type TCPTransport struct {
 	sock     *net.TCPListener
 	timeout  time.Duration

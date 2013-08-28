@@ -11,8 +11,9 @@ type localRPC struct {
 	obj   VnodeRPC
 }
 
-// Provides fast routing to local Vnodes, uses another transport
-// for access to remove Vnodes
+// LocalTransport is used to provides fast routing to Vnodes running
+// locally using direct method calls. For any non-local vnodes, the
+// request is passed on to another transport.
 type LocalTransport struct {
 	host   string
 	remote Transport
@@ -44,7 +45,6 @@ func (lt *LocalTransport) get(vn *Vnode) (VnodeRPC, bool) {
 	}
 }
 
-// Returns a list of vnodes
 func (lt *LocalTransport) ListVnodes(host string) ([]*Vnode, error) {
 	// Check if this is a local host
 	if host == lt.host {
@@ -65,7 +65,6 @@ func (lt *LocalTransport) ListVnodes(host string) ([]*Vnode, error) {
 	return lt.remote.ListVnodes(host)
 }
 
-// Ping a Vnode, check for liveness
 func (lt *LocalTransport) Ping(vn *Vnode) (bool, error) {
 	// Look for it locally
 	_, ok := lt.get(vn)
@@ -79,7 +78,6 @@ func (lt *LocalTransport) Ping(vn *Vnode) (bool, error) {
 	return lt.remote.Ping(vn)
 }
 
-// Request a nodes predecessor
 func (lt *LocalTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
 	// Look for it locally
 	obj, ok := lt.get(vn)
@@ -93,7 +91,6 @@ func (lt *LocalTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
 	return lt.remote.GetPredecessor(vn)
 }
 
-// Notify our successor of ourselves
 func (lt *LocalTransport) Notify(vn, self *Vnode) ([]*Vnode, error) {
 	// Look for it locally
 	obj, ok := lt.get(vn)
@@ -107,7 +104,6 @@ func (lt *LocalTransport) Notify(vn, self *Vnode) ([]*Vnode, error) {
 	return lt.remote.Notify(vn, self)
 }
 
-// Find a successor
 func (lt *LocalTransport) FindSuccessors(vn *Vnode, n int, key []byte) ([]*Vnode, error) {
 	// Look for it locally
 	obj, ok := lt.get(vn)
@@ -121,7 +117,6 @@ func (lt *LocalTransport) FindSuccessors(vn *Vnode, n int, key []byte) ([]*Vnode
 	return lt.remote.FindSuccessors(vn, n, key)
 }
 
-// Clears a predecessor if it matches a given vnode. Used to leave.
 func (lt *LocalTransport) ClearPredecessor(target, self *Vnode) error {
 	// Look for it locally
 	obj, ok := lt.get(target)
@@ -135,7 +130,6 @@ func (lt *LocalTransport) ClearPredecessor(target, self *Vnode) error {
 	return lt.remote.ClearPredecessor(target, self)
 }
 
-// Instructs a node to skip a given successor. Used to leave.
 func (lt *LocalTransport) SkipSuccessor(target, self *Vnode) error {
 	// Look for it locally
 	obj, ok := lt.get(target)
@@ -149,7 +143,6 @@ func (lt *LocalTransport) SkipSuccessor(target, self *Vnode) error {
 	return lt.remote.SkipSuccessor(target, self)
 }
 
-// Register for an RPC callbacks
 func (lt *LocalTransport) Register(v *Vnode, o VnodeRPC) {
 	// Register local instance
 	key := v.String()
@@ -162,7 +155,6 @@ func (lt *LocalTransport) Register(v *Vnode, o VnodeRPC) {
 	lt.remote.Register(v, o)
 }
 
-// Used to deregister a local node
 func (lt *LocalTransport) Deregister(v *Vnode) {
 	key := v.String()
 	lt.lock.Lock()
@@ -170,7 +162,8 @@ func (lt *LocalTransport) Deregister(v *Vnode) {
 	lt.lock.Unlock()
 }
 
-// Used to blackhole traffic
+// BlackholeTransport is used to provide an implemenation of the Transport that
+// does not actually do anything. Any operation will result in an error.
 type BlackholeTransport struct {
 }
 
@@ -190,21 +183,17 @@ func (*BlackholeTransport) Notify(vn, self *Vnode) ([]*Vnode, error) {
 	return nil, fmt.Errorf("Failed to connect! Blackhole: %s", vn.String())
 }
 
-// Find a successor
 func (*BlackholeTransport) FindSuccessors(vn *Vnode, n int, key []byte) ([]*Vnode, error) {
 	return nil, fmt.Errorf("Failed to connect! Blackhole: %s", vn.String())
 }
 
-// Clears a predecessor if it matches a given vnode. Used to leave.
 func (*BlackholeTransport) ClearPredecessor(target, self *Vnode) error {
 	return fmt.Errorf("Failed to connect! Blackhole: %s", target.String())
 }
 
-// Instructs a node to skip a given successor. Used to leave.
 func (*BlackholeTransport) SkipSuccessor(target, self *Vnode) error {
 	return fmt.Errorf("Failed to connect! Blackhole: %s", target.String())
 }
 
-// Register for an RPC callbacks
 func (*BlackholeTransport) Register(v *Vnode, o VnodeRPC) {
 }
