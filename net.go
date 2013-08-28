@@ -582,6 +582,9 @@ func (t *TCPTransport) Shutdown() {
 // Closes old outbound connections
 func (t *TCPTransport) reapOld() {
 	for {
+		if t.shutdown {
+			return
+		}
 		time.Sleep(30 * time.Second)
 		t.reapOnce()
 	}
