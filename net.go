@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -28,7 +29,7 @@ type TCPTransport struct {
 	inbound  map[*net.TCPConn]struct{}
 	poolLock sync.Mutex
 	pool     map[string][]*tcpOutConn
-	shutdown bool
+	shutdown int32
 }
 
 type tcpOutConn struct {
@@ -139,7 +140,7 @@ func (t *TCPTransport) getConn(host string) (*tcpOutConn, error) {
 	// Check if we have a conn cached
 	var out *tcpOutConn
 	t.poolLock.Lock()
-	if t.shutdown {
+	if atomic.LoadInt32(&t.shutdown) == 1 {
 		t.poolLock.Unlock()
 		return nil, fmt.Errorf("TCP transport is shutdown")
 	}
@@ -183,7 +184,7 @@ func (t *TCPTransport) returnConn(o *tcpOutConn) {
 	// Push back into the pool
 	t.poolLock.Lock()
 	defer t.poolLock.Unlock()
-	if t.shutdown {
+	if atomic.LoadInt32(&t.shutdown) == 1 {
 		o.sock.Close()
 		return
 	}
@@ -558,7 +559,7 @@ func (t *TCPTransport) Register(v *Vnode, o VnodeRPC) {
 
 // Shutdown the TCP transport
 func (t *TCPTransport) Shutdown() {
-	t.shutdown = true
+	atomic.StoreInt32(&t.shutdown, 1)
 	t.sock.Close()
 
 	// Close all the inbound connections
@@ -582,7 +583,7 @@ func (t *TCPTransport) Shutdown() {
 // Closes old outbound connections
 func (t *TCPTransport) reapOld() {
 	for {
-		if t.shutdown {
+		if atomic.LoadInt32(&t.shutdown) == 1 {
 			return
 		}
 		time.Sleep(30 * time.Second)
@@ -613,7 +614,7 @@ func (t *TCPTransport) listen() {
 	for {
 		conn, err := t.sock.AcceptTCP()
 		if err != nil {
-			if !t.shutdown {
+			if atomic.LoadInt32(&t.shutdown) == 0 {
 				fmt.Printf("[ERR] Error accepting TCP connection! %s", err)
 				continue
 			} else {
@@ -651,7 +652,7 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 	for {
 		// Get the header
 		if err := dec.Decode(&header); err != nil {
-			if !t.shutdown && err.Error() != "EOF" {
+			if atomic.LoadInt32(&t.shutdown) == 0 && err.Error() != "EOF" {
 				log.Printf("[ERR] Failed to decode TCP header! Got %s", err)
 			}
 			return
