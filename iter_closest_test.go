@@ -21,7 +21,7 @@ func TestNextClosest(t *testing.T) {
 	vn.successors = []*Vnode{v6, v7, nil}
 	vn.finger = []*Vnode{v6, v6, v7, v1, v2, v4, nil}
 	vn.ring = &Ring{}
-	vn.ring.config = &Config{HashBits: 6}
+	vn.ring.config = &Config{hashBits: 6}
 
 	// Make an iterator
 	k := []byte{32}
@@ -71,7 +71,7 @@ func TestNextClosestNoSucc(t *testing.T) {
 	vn.successors = []*Vnode{nil}
 	vn.finger = []*Vnode{v6, v6, v7, v1, v2, v4, nil}
 	vn.ring = &Ring{}
-	vn.ring.config = &Config{HashBits: 6}
+	vn.ring.config = &Config{hashBits: 6}
 
 	// Make an iterator
 	k := []byte{32}
@@ -121,7 +121,7 @@ func TestNextClosestNoFinger(t *testing.T) {
 	vn.successors = []*Vnode{v6, v7, v7, nil}
 	vn.finger = []*Vnode{nil, nil, nil}
 	vn.ring = &Ring{}
-	vn.ring.config = &Config{HashBits: 6}
+	vn.ring.config = &Config{hashBits: 6}
 
 	// Make an iterator
 	k := []byte{32}

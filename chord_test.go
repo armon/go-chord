@@ -101,7 +101,7 @@ func TestDefaultConfig(t *testing.T) {
 	if conf.HashFunc == nil {
 		t.Fatalf("bad hash")
 	}
-	if conf.HashBits != 160 {
+	if conf.hashBits != 160 {
 		t.Fatalf("bad hash bits")
 	}
 	if conf.StabilizeMin != time.Duration(15*time.Second) {

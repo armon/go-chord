@@ -29,7 +29,7 @@ func makeRing() *Ring {
 		NumVnodes:     5,
 		NumSuccessors: 8,
 		HashFunc:      sha1.New,
-		HashBits:      160,
+		hashBits:      160,
 		StabilizeMin:  time.Second,
 		StabilizeMax:  5 * time.Second,
 	}
