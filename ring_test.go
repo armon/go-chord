@@ -8,6 +8,22 @@ import (
 	"time"
 )
 
+type MockDelegate struct {
+	shutdown bool
+}
+
+func (m *MockDelegate) NewPredecessor(local, remoteNew, remotePrev *Vnode) {
+}
+func (m *MockDelegate) Leaving(local, pred, succ *Vnode) {
+}
+func (m *MockDelegate) PredecessorLeaving(local, remote *Vnode) {
+}
+func (m *MockDelegate) SuccessorLeaving(local, remote *Vnode) {
+}
+func (m *MockDelegate) Shutdown() {
+	m.shutdown = true
+}
+
 func makeRing() *Ring {
 	conf := &Config{
 		NumVnodes:     5,
@@ -18,15 +34,8 @@ func makeRing() *Ring {
 		StabilizeMax:  5 * time.Second,
 	}
 
-	vnodes := make([]*localVnode, conf.NumVnodes)
-	trans := InitLocalTransport(nil)
-	ring := &Ring{config: conf, vnodes: vnodes, transport: trans}
-	for i := 0; i < conf.NumVnodes; i++ {
-		vn := &localVnode{}
-		vnodes[i] = vn
-		vn.ring = ring
-		vn.init(i)
-	}
+	ring := &Ring{}
+	ring.init(conf, nil)
 	return ring
 }
 
@@ -105,12 +114,14 @@ func TestRingNearest(t *testing.T) {
 
 func TestRingSchedule(t *testing.T) {
 	ring := makeRing()
+	ring.setLocalSuccessors()
 	ring.schedule()
 	for i := 0; i < len(ring.vnodes); i++ {
 		if ring.vnodes[i].timer == nil {
 			t.Fatalf("expected timer!")
 		}
 	}
+	ring.stopVnodes()
 }
 
 func TestRingSetLocalSucc(t *testing.T) {
@@ -140,5 +151,36 @@ func TestRingSetLocalSucc(t *testing.T) {
 	}
 	if vn.successors[3] != &ring.vnodes[1].Vnode {
 		t.Fatalf("bad succ!")
+	}
+}
+
+func TestRingDelegate(t *testing.T) {
+	d := &MockDelegate{}
+	ring := makeRing()
+	ring.setLocalSuccessors()
+	ring.config.Delegate = d
+	ring.schedule()
+
+	var b bool
+	f := func() {
+		println("run!")
+		b = true
+	}
+	ch := ring.invokeDelegate(f)
+	if ch == nil {
+		t.Fatalf("expected chan")
+	}
+	select {
+	case <-ch:
+	case <-time.After(time.Second):
+		t.Fatalf("timeout")
+	}
+	if !b {
+		t.Fatalf("b should be true")
+	}
+
+	ring.stopDelegate()
+	if !d.shutdown {
+		t.Fatalf("delegate did not get shutdown")
 	}
 }
