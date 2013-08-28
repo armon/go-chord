@@ -22,7 +22,7 @@ func (vn *localVnode) init(idx int) {
 
 	// Initialize all state
 	vn.successors = make([]*Vnode, vn.ring.config.NumSuccessors)
-	vn.finger = make([]*Vnode, vn.ring.config.HashBits)
+	vn.finger = make([]*Vnode, vn.ring.config.hashBits)
 
 	// Register with the RPC mechanism
 	vn.ring.transport.Register(&vn.Vnode, vn)
@@ -187,7 +187,7 @@ func (vn *localVnode) Notify(maybe_pred *Vnode) ([]*Vnode, error) {
 // Fixes up the finger table
 func (vn *localVnode) fixFingerTable() error {
 	// Determine the offset
-	hb := vn.ring.config.HashBits
+	hb := vn.ring.config.hashBits
 	offset := powerOffset(vn.Id, vn.last_finger, hb)
 
 	// Find the successor

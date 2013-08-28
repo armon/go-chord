@@ -60,7 +60,7 @@ func (cp *closestPreceedingVnodeIterator) Next() *Vnode {
 	// Determine which node is better
 	if successor_node != nil && finger_node != nil {
 		// Determine the closer node
-		hb := cp.vn.ring.config.HashBits
+		hb := cp.vn.ring.config.hashBits
 		closest := closest_preceeding_vnode(successor_node,
 			finger_node, cp.key, hb)
 		if closest == successor_node {

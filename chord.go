@@ -61,11 +61,11 @@ type Config struct {
 	Hostname      string           // Local host name
 	NumVnodes     int              // Number of vnodes per physical node
 	HashFunc      func() hash.Hash // Hash function to use
-	HashBits      int              // Bit size of the hash function
 	StabilizeMin  time.Duration    // Minimum stabilization time
 	StabilizeMax  time.Duration    // Maximum stabilization time
 	NumSuccessors int              // Number of successors to maintain
 	Delegate      Delegate         // Invoked to handle ring events
+	hashBits      int              // Bit size of the hash function
 }
 
 // Represents an Vnode, local or remote
@@ -101,16 +101,19 @@ func DefaultConfig(hostname string) *Config {
 		hostname,
 		8,        // 8 vnodes
 		sha1.New, // SHA1
-		160,      // 160bit hash function
 		time.Duration(15 * time.Second),
 		time.Duration(45 * time.Second),
 		8,   // 8 successors
 		nil, // No delegate
+		160, // 160bit hash function
 	}
 }
 
 // Creates a new Chord ring given the config and transport
 func Create(conf *Config, trans Transport) (*Ring, error) {
+	// Initialize the hash bits
+	conf.hashBits = conf.HashFunc().Size() * 8
+
 	// Create and initialize a ring
 	ring := &Ring{}
 	ring.init(conf, trans)
@@ -121,6 +124,9 @@ func Create(conf *Config, trans Transport) (*Ring, error) {
 
 // Joins an existing Chord ring
 func Join(conf *Config, trans Transport, existing string) (*Ring, error) {
+	// Initialize the hash bits
+	conf.hashBits = conf.HashFunc().Size() * 8
+
 	// Request a list of Vnodes from the remote host
 	hosts, err := trans.ListVnodes(existing)
 	if err != nil {
