@@ -4,7 +4,7 @@ import (
 	"math/big"
 )
 
-type ClosestPreceedingVnodeIterator struct {
+type closestPreceedingVnodeIterator struct {
 	key           []byte
 	vn            *localVnode
 	finger_idx    int
@@ -12,7 +12,7 @@ type ClosestPreceedingVnodeIterator struct {
 	yielded       map[string]struct{}
 }
 
-func (cp *ClosestPreceedingVnodeIterator) init(vn *localVnode, key []byte) {
+func (cp *closestPreceedingVnodeIterator) init(vn *localVnode, key []byte) {
 	cp.key = key
 	cp.vn = vn
 	cp.successor_idx = len(vn.successors) - 1
@@ -20,7 +20,7 @@ func (cp *ClosestPreceedingVnodeIterator) init(vn *localVnode, key []byte) {
 	cp.yielded = make(map[string]struct{})
 }
 
-func (cp *ClosestPreceedingVnodeIterator) Next() *Vnode {
+func (cp *closestPreceedingVnodeIterator) Next() *Vnode {
 	// Try to find each node
 	var successor_node *Vnode
 	var finger_node *Vnode

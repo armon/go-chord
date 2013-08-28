@@ -1,7 +1,6 @@
-/**
+/*
 This package is used to provide an implementation of the
-Chord network protocol. It can be used to provide a DHT
-which is tolerant to churn in the member ndoes.
+Chord network protocol.
 */
 package chord
 
