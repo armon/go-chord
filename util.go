@@ -110,3 +110,17 @@ func mergeErrors(err1, err2 error) error {
 		return fmt.Errorf("%s\n%s", err1, err2)
 	}
 }
+
+// Trims the slice to remove nil elements
+func trimSlice(vn []*Vnode) []*Vnode {
+	if vn == nil {
+		return vn
+	}
+
+	// Find a non-nil index
+	idx := len(vn) - 1
+	for vn[idx] == nil {
+		idx--
+	}
+	return vn[:idx+1]
+}

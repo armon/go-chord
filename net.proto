@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package chord;
+
+service chord {
+    rpc ListVnodesServe(StringParam) returns (VnodeListErr) {}
+    rpc PingServe(Vnode) returns (BoolErr) {}
+    rpc NotifyServe(VnodePair) returns (VnodeListErr) {}
+    rpc GetPredecessorServe(Vnode) returns (VnodeError) {}
+    rpc FindSuccessorsServe(FindSuccReq) returns (VnodeListErr) {}
+    rpc ClearPredecessorServe(VnodePair) returns (ErrResponse) {}
+    rpc SkipSuccessorServe(VnodePair) returns (ErrResponse) {}
+}
+
+message Vnode {
+    bytes id = 1;
+    string host = 2;
+}
+
+message VnodeError {
+    Vnode VN = 1;
+    string err = 2;
+}
+
+message VnodeListErr {
+    string err = 1;
+    repeated Vnode vnodes = 2;
+}
+
+message BoolErr {
+    bool ok = 1;
+    string err = 2;
+}
+
+message FindSuccReq {
+    Vnode VN = 1;
+    int32 count = 2;
+    bytes key = 3;
+}
+message StringParam {
+    string value = 1;
+}
+
+message VnodePair {
+    Vnode target = 1;
+    Vnode self = 2;
+}
+
+message ErrResponse {
+    string err = 1;
+}

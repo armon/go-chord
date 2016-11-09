@@ -1,0 +1,81 @@
+{
+	"ImportPath": "github.com/euforia/go-chord-grpc",
+	"GoVersion": "go1.6",
+	"GodepVersion": "v74",
+	"Deps": [
+		{
+			"ImportPath": "github.com/golang/protobuf/proto",
+			"Rev": "df1d3ca07d2d07bba352d5b73c4313b4e2a6203e"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "cd8c2701a5e10f044db915e65eac68f738399d22"
+		},
+		{
+			"ImportPath": "golang.org/x/net/http2",
+			"Rev": "cd8c2701a5e10f044db915e65eac68f738399d22"
+		},
+		{
+			"ImportPath": "golang.org/x/net/http2/hpack",
+			"Rev": "cd8c2701a5e10f044db915e65eac68f738399d22"
+		},
+		{
+			"ImportPath": "golang.org/x/net/internal/timeseries",
+			"Rev": "cd8c2701a5e10f044db915e65eac68f738399d22"
+		},
+		{
+			"ImportPath": "golang.org/x/net/trace",
+			"Rev": "cd8c2701a5e10f044db915e65eac68f738399d22"
+		},
+		{
+			"ImportPath": "google.golang.org/grpc",
+			"Comment": "v1.0.4-8-geddbd11",
+			"Rev": "eddbd11c7ecd001d06777cb87b5ea7af54227907"
+		},
+		{
+			"ImportPath": "google.golang.org/grpc/codes",
+			"Comment": "v1.0.4-8-geddbd11",
+			"Rev": "eddbd11c7ecd001d06777cb87b5ea7af54227907"
+		},
+		{
+			"ImportPath": "google.golang.org/grpc/credentials",
+			"Comment": "v1.0.4-8-geddbd11",
+			"Rev": "eddbd11c7ecd001d06777cb87b5ea7af54227907"
+		},
+		{
+			"ImportPath": "google.golang.org/grpc/grpclog",
+			"Comment": "v1.0.4-8-geddbd11",
+			"Rev": "eddbd11c7ecd001d06777cb87b5ea7af54227907"
+		},
+		{
+			"ImportPath": "google.golang.org/grpc/internal",
+			"Comment": "v1.0.4-8-geddbd11",
+			"Rev": "eddbd11c7ecd001d06777cb87b5ea7af54227907"
+		},
+		{
+			"ImportPath": "google.golang.org/grpc/metadata",
+			"Comment": "v1.0.4-8-geddbd11",
+			"Rev": "eddbd11c7ecd001d06777cb87b5ea7af54227907"
+		},
+		{
+			"ImportPath": "google.golang.org/grpc/naming",
+			"Comment": "v1.0.4-8-geddbd11",
+			"Rev": "eddbd11c7ecd001d06777cb87b5ea7af54227907"
+		},
+		{
+			"ImportPath": "google.golang.org/grpc/peer",
+			"Comment": "v1.0.4-8-geddbd11",
+			"Rev": "eddbd11c7ecd001d06777cb87b5ea7af54227907"
+		},
+		{
+			"ImportPath": "google.golang.org/grpc/tap",
+			"Comment": "v1.0.4-8-geddbd11",
+			"Rev": "eddbd11c7ecd001d06777cb87b5ea7af54227907"
+		},
+		{
+			"ImportPath": "google.golang.org/grpc/transport",
+			"Comment": "v1.0.4-8-geddbd11",
+			"Rev": "eddbd11c7ecd001d06777cb87b5ea7af54227907"
+		}
+	]
+}
