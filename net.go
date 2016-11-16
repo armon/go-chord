@@ -156,6 +156,7 @@ func (t *TCPTransport) getConn(host string) (*tcpOutConn, error) {
 		if _, err := out.sock.Read(nil); err == nil {
 			return out, nil
 		}
+		out.sock.Close()
 	}
 
 	// Try to establish a connection
