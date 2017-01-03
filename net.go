@@ -723,6 +723,9 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 				log.Printf("[ERR] Failed to decode TCP body! Got %s", err)
 				return
 			}
+			if body.Target == nil {
+				return
+			}
 
 			// Generate a response
 			obj, ok := t.get(body.Target)
