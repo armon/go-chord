@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-// Converts the ID to string
-func (vn *Vnode) String() string {
+// StringID converts the ID to a string
+func (vn *Vnode) StringID() string {
 	return fmt.Sprintf("%x", vn.Id)
 }
 
@@ -158,7 +158,7 @@ func (vn *localVnode) notifySuccessor() error {
 			break
 		}
 		// Ensure we don't set ourselves as a successor!
-		if s == nil || s.String() == vn.String() {
+		if s == nil || s.StringID() == vn.StringID() {
 			break
 		}
 		vn.successors[idx+1] = s
@@ -188,7 +188,7 @@ func (vn *localVnode) Notify(maybe_pred *Vnode) ([]*Vnode, error) {
 func (vn *localVnode) fixFingerTable() error {
 	// Determine the offset
 	hb := vn.ring.config.hashBits
-	offset := powerOffset(vn.Id, vn.last_finger, hb)
+	offset := powerOffset(vn.Id, vn.lastFinger, hb)
 
 	// Find the successor
 	nodes, err := vn.FindSuccessors(1, offset)
@@ -198,11 +198,11 @@ func (vn *localVnode) fixFingerTable() error {
 	node := nodes[0]
 
 	// Update the finger table
-	vn.finger[vn.last_finger] = node
+	vn.finger[vn.lastFinger] = node
 
 	// Try to skip as many finger entries as possible
 	for {
-		next := vn.last_finger + 1
+		next := vn.lastFinger + 1
 		if next >= hb {
 			break
 		}
@@ -211,17 +211,17 @@ func (vn *localVnode) fixFingerTable() error {
 		// While the node is the successor, update the finger entries
 		if betweenRightIncl(vn.Id, node.Id, offset) {
 			vn.finger[next] = node
-			vn.last_finger = next
+			vn.lastFinger = next
 		} else {
 			break
 		}
 	}
 
 	// Increment to the index to repair
-	if vn.last_finger+1 == hb {
-		vn.last_finger = 0
+	if vn.lastFinger+1 == hb {
+		vn.lastFinger = 0
 	} else {
-		vn.last_finger++
+		vn.lastFinger++
 	}
 
 	return nil
@@ -265,9 +265,8 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 		res, err := vn.ring.transport.FindSuccessors(closest, n, key)
 		if err == nil {
 			return res, nil
-		} else {
-			log.Printf("[ERR] Failed to contact %s. Got %s", closest.String(), err)
 		}
+		log.Printf("[ERR] Failed to contact %s. Got %s", closest.StringID(), err)
 	}
 
 	// Determine how many successors we know of
@@ -312,7 +311,7 @@ func (vn *localVnode) leave() error {
 
 // Used to clear our predecessor when a node is leaving
 func (vn *localVnode) ClearPredecessor(p *Vnode) error {
-	if vn.predecessor != nil && vn.predecessor.String() == p.String() {
+	if vn.predecessor != nil && vn.predecessor.StringID() == p.StringID() {
 		// Inform the delegate
 		conf := vn.ring.config
 		old := vn.predecessor
@@ -327,7 +326,7 @@ func (vn *localVnode) ClearPredecessor(p *Vnode) error {
 // Used to skip a successor when a node is leaving
 func (vn *localVnode) SkipSuccessor(s *Vnode) error {
 	// Skip if we have a match
-	if vn.successors[0].String() == s.String() {
+	if vn.successors[0].StringID() == s.StringID() {
 		// Inform the delegate
 		conf := vn.ring.config
 		old := vn.successors[0]

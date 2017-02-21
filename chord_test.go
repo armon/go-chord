@@ -267,7 +267,7 @@ func TestLookup(t *testing.T) {
 			t.Fatalf("result len differs!")
 		}
 		for idx := range vn1 {
-			if vn1[idx].String() != vn2[idx].String() {
+			if vn1[idx].StringID() != vn2[idx].StringID() {
 				t.Fatalf("results differ!")
 			}
 		}

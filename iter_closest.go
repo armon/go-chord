@@ -32,7 +32,7 @@ func (cp *closestPreceedingVnodeIterator) Next() *Vnode {
 		if vn.successors[i] == nil {
 			continue
 		}
-		if _, ok := cp.yielded[vn.successors[i].String()]; ok {
+		if _, ok := cp.yielded[vn.successors[i].StringID()]; ok {
 			continue
 		}
 		if between(vn.Id, cp.key, vn.successors[i].Id) {
@@ -47,7 +47,7 @@ func (cp *closestPreceedingVnodeIterator) Next() *Vnode {
 		if vn.finger[i] == nil {
 			continue
 		}
-		if _, ok := cp.yielded[vn.finger[i].String()]; ok {
+		if _, ok := cp.yielded[vn.finger[i].StringID()]; ok {
 			continue
 		}
 		if between(vn.Id, cp.key, vn.finger[i].Id) {
@@ -68,17 +68,17 @@ func (cp *closestPreceedingVnodeIterator) Next() *Vnode {
 		} else {
 			cp.finger_idx--
 		}
-		cp.yielded[closest.String()] = struct{}{}
+		cp.yielded[closest.StringID()] = struct{}{}
 		return closest
 
 	} else if successor_node != nil {
 		cp.successor_idx--
-		cp.yielded[successor_node.String()] = struct{}{}
+		cp.yielded[successor_node.StringID()] = struct{}{}
 		return successor_node
 
 	} else if finger_node != nil {
 		cp.finger_idx--
-		cp.yielded[finger_node.String()] = struct{}{}
+		cp.yielded[finger_node.StringID()] = struct{}{}
 		return finger_node
 	}
 

@@ -124,15 +124,14 @@ func InitTCPTransport(listen string, timeout time.Duration) (*TCPTransport, erro
 
 // Checks for a local vnode
 func (t *TCPTransport) get(vn *Vnode) (VnodeRPC, bool) {
-	key := vn.String()
+	key := vn.StringID()
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 	w, ok := t.local[key]
 	if ok {
 		return w.obj, ok
-	} else {
-		return nil, ok
 	}
+	return nil, ok
 }
 
 // Gets an outbound connection to a host
@@ -552,7 +551,7 @@ func (t *TCPTransport) SkipSuccessor(target, self *Vnode) error {
 
 // Register for an RPC callbacks
 func (t *TCPTransport) Register(v *Vnode, o VnodeRPC) {
-	key := v.String()
+	key := v.StringID()
 	t.lock.Lock()
 	t.local[key] = &localRPC{v, o}
 	t.lock.Unlock()
@@ -674,7 +673,7 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 				sendResp = tcpBodyBoolError{B: ok, Err: nil}
 			} else {
 				sendResp = tcpBodyBoolError{B: ok, Err: fmt.Errorf("Target VN not found! Target %s:%s",
-					body.Vn.Host, body.Vn.String())}
+					body.Vn.Host, body.Vn.StringID())}
 			}
 
 		case tcpListReq:
@@ -714,7 +713,7 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 				resp.Err = err
 			} else {
 				resp.Err = fmt.Errorf("Target VN not found! Target %s:%s",
-					body.Vn.Host, body.Vn.String())
+					body.Vn.Host, body.Vn.StringID())
 			}
 
 		case tcpNotifyReq:
@@ -737,7 +736,7 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 				resp.Err = err
 			} else {
 				resp.Err = fmt.Errorf("Target VN not found! Target %s:%s",
-					body.Target.Host, body.Target.String())
+					body.Target.Host, body.Target.StringID())
 			}
 
 		case tcpFindSucReq:
@@ -757,7 +756,7 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 				resp.Err = err
 			} else {
 				resp.Err = fmt.Errorf("Target VN not found! Target %s:%s",
-					body.Target.Host, body.Target.String())
+					body.Target.Host, body.Target.StringID())
 			}
 
 		case tcpClearPredReq:
@@ -775,7 +774,7 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 				resp.Err = obj.ClearPredecessor(body.Vn)
 			} else {
 				resp.Err = fmt.Errorf("Target VN not found! Target %s:%s",
-					body.Target.Host, body.Target.String())
+					body.Target.Host, body.Target.StringID())
 			}
 
 		case tcpSkipSucReq:
@@ -793,7 +792,7 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 				resp.Err = obj.SkipSuccessor(body.Vn)
 			} else {
 				resp.Err = fmt.Errorf("Target VN not found! Target %s:%s",
-					body.Target.Host, body.Target.String())
+					body.Target.Host, body.Target.StringID())
 			}
 
 		default:
@@ -807,18 +806,4 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 			return
 		}
 	}
-}
-
-// Trims the slice to remove nil elements
-func trimSlice(vn []*Vnode) []*Vnode {
-	if vn == nil {
-		return vn
-	}
-
-	// Find a non-nil index
-	idx := len(vn) - 1
-	for vn[idx] == nil {
-		idx--
-	}
-	return vn[:idx+1]
 }

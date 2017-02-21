@@ -154,10 +154,10 @@ func TestVnodeCheckNewSuccDead(t *testing.T) {
 	vn1.successors[0] = &Vnode{Id: []byte{0}}
 
 	if err := vn1.checkNewSuccessor(); err == nil {
-		t.Fatalf("err!", err)
+		t.Fatalf("err: %v", err)
 	}
 
-	if vn1.successors[0].String() != "00" {
+	if vn1.successors[0].StringID() != "00" {
 		t.Fatalf("unexpected successor!")
 	}
 }
@@ -439,12 +439,12 @@ func TestVnodeFixFinger(t *testing.T) {
 	}
 
 	// Check we've progressed
-	if vn.last_finger != 158 {
-		t.Fatalf("unexpected last finger! %d", vn.last_finger)
+	if vn.lastFinger != 158 {
+		t.Fatalf("unexpected last finger! %d", vn.lastFinger)
 	}
 
 	// Ensure that we've setup our successor as the initial entries
-	for i := 0; i < vn.last_finger; i++ {
+	for i := 0; i < vn.lastFinger; i++ {
 		if vn.finger[i] != vn.successors[0] {
 			t.Fatalf("unexpected finger entry!")
 		}
@@ -454,8 +454,8 @@ func TestVnodeFixFinger(t *testing.T) {
 	if err := vn.fixFingerTable(); err != nil {
 		t.Fatalf("unexpected err, %s", err)
 	}
-	if vn.last_finger != 0 {
-		t.Fatalf("unexpected last finger! %d", vn.last_finger)
+	if vn.lastFinger != 0 {
+		t.Fatalf("unexpected last finger! %d", vn.lastFinger)
 	}
 }
 

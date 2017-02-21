@@ -34,7 +34,7 @@ func InitLocalTransport(remote Transport) Transport {
 
 // Checks for a local vnode
 func (lt *LocalTransport) get(vn *Vnode) (VnodeRPC, bool) {
-	key := vn.String()
+	key := vn.StringID()
 	lt.lock.RLock()
 	defer lt.lock.RUnlock()
 	w, ok := lt.local[key]
@@ -145,7 +145,7 @@ func (lt *LocalTransport) SkipSuccessor(target, self *Vnode) error {
 
 func (lt *LocalTransport) Register(v *Vnode, o VnodeRPC) {
 	// Register local instance
-	key := v.String()
+	key := v.StringID()
 	lt.lock.Lock()
 	lt.host = v.Host
 	lt.local[key] = &localRPC{v, o}
@@ -156,7 +156,7 @@ func (lt *LocalTransport) Register(v *Vnode, o VnodeRPC) {
 }
 
 func (lt *LocalTransport) Deregister(v *Vnode) {
-	key := v.String()
+	key := v.StringID()
 	lt.lock.Lock()
 	delete(lt.local, key)
 	lt.lock.Unlock()
@@ -176,23 +176,23 @@ func (*BlackholeTransport) Ping(vn *Vnode) (bool, error) {
 }
 
 func (*BlackholeTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
-	return nil, fmt.Errorf("Failed to connect! Blackhole: %s.", vn.String())
+	return nil, fmt.Errorf("Failed to connect! Blackhole: %s.", vn.StringID())
 }
 
 func (*BlackholeTransport) Notify(vn, self *Vnode) ([]*Vnode, error) {
-	return nil, fmt.Errorf("Failed to connect! Blackhole: %s", vn.String())
+	return nil, fmt.Errorf("Failed to connect! Blackhole: %s", vn.StringID())
 }
 
 func (*BlackholeTransport) FindSuccessors(vn *Vnode, n int, key []byte) ([]*Vnode, error) {
-	return nil, fmt.Errorf("Failed to connect! Blackhole: %s", vn.String())
+	return nil, fmt.Errorf("Failed to connect! Blackhole: %s", vn.StringID())
 }
 
 func (*BlackholeTransport) ClearPredecessor(target, self *Vnode) error {
-	return fmt.Errorf("Failed to connect! Blackhole: %s", target.String())
+	return fmt.Errorf("Failed to connect! Blackhole: %s", target.StringID())
 }
 
 func (*BlackholeTransport) SkipSuccessor(target, self *Vnode) error {
-	return fmt.Errorf("Failed to connect! Blackhole: %s", target.String())
+	return fmt.Errorf("Failed to connect! Blackhole: %s", target.StringID())
 }
 
 func (*BlackholeTransport) Register(v *Vnode, o VnodeRPC) {
