@@ -75,24 +75,22 @@ func powerOffset(id []byte, exp int, mod int) []byte {
 func max(a, b int) int {
 	if a >= b {
 		return a
-	} else {
-		return b
 	}
+	return b
 }
 
 // min returns the min of two ints
 func min(a, b int) int {
 	if a <= b {
 		return a
-	} else {
-		return b
 	}
+	return b
 }
 
 // Returns the vnode nearest a key
 func nearestVnodeToKey(vnodes []*Vnode, key []byte) *Vnode {
 	for i := len(vnodes) - 1; i >= 0; i-- {
-		if bytes.Compare(vnodes[i].Id, key) == -1 {
+		if bytes.Compare(vnodes[i].ID, key) == -1 {
 			return vnodes[i]
 		}
 	}

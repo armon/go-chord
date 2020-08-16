@@ -2,20 +2,26 @@ package chord
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"log"
 	"time"
 )
 
+var (
+	errAllKnownSuccDead      = errors.New("all known successors dead")
+	errExhaustedProceedNodes = errors.New("exhausted all preceeding nodes")
+)
+
 // Converts the ID to string
 func (vn *Vnode) String() string {
-	return fmt.Sprintf("%x", vn.Id)
+	return fmt.Sprintf("%x", vn.ID)
 }
 
 // Initializes a local vnode
 func (vn *localVnode) init(idx int) {
 	// Generate an ID
-	vn.genId(uint16(idx))
+	vn.genID(uint16(idx))
 
 	// Set our host
 	vn.Host = vn.ring.config.Hostname
@@ -35,7 +41,7 @@ func (vn *localVnode) schedule() {
 }
 
 // Generates an ID for the node
-func (vn *localVnode) genId(idx uint16) {
+func (vn *localVnode) genID(idx uint16) {
 	// Use the hash funciton
 	conf := vn.ring.config
 	hash := conf.HashFunc()
@@ -43,7 +49,7 @@ func (vn *localVnode) genId(idx uint16) {
 	binary.Write(hash, binary.BigEndian, idx)
 
 	// Use the hash as the ID
-	vn.Id = hash.Sum(nil)
+	vn.ID = hash.Sum(nil)
 }
 
 // Called to periodically stabilize the vnode
@@ -94,7 +100,7 @@ CHECK_NEW_SUC:
 	if succ == nil {
 		panic("Node has no successor!")
 	}
-	maybe_suc, err := trans.GetPredecessor(succ)
+	maybeSuc, err := trans.GetPredecessor(succ)
 	if err != nil {
 		// Check if we have succ list, try to contact next live succ
 		known := vn.knownSuccessors()
@@ -103,7 +109,7 @@ CHECK_NEW_SUC:
 				if alive, _ := trans.Ping(vn.successors[0]); !alive {
 					// Don't eliminate the last successor we know of
 					if i+1 == known {
-						return fmt.Errorf("All known successors dead!")
+						return errAllKnownSuccDead
 					}
 
 					// Advance the successors list past the dead one
@@ -119,12 +125,12 @@ CHECK_NEW_SUC:
 	}
 
 	// Check if we should replace our successor
-	if maybe_suc != nil && between(vn.Id, succ.Id, maybe_suc.Id) {
+	if maybeSuc != nil && between(vn.ID, succ.ID, maybeSuc.ID) {
 		// Check if new successor is alive before switching
-		alive, err := trans.Ping(maybe_suc)
+		alive, err := trans.Ping(maybeSuc)
 		if alive && err == nil {
 			copy(vn.successors[1:], vn.successors[0:len(vn.successors)-1])
-			vn.successors[0] = maybe_suc
+			vn.successors[0] = maybeSuc
 		} else {
 			return err
 		}
@@ -141,19 +147,19 @@ func (vn *localVnode) GetPredecessor() (*Vnode, error) {
 func (vn *localVnode) notifySuccessor() error {
 	// Notify successor
 	succ := vn.successors[0]
-	succ_list, err := vn.ring.transport.Notify(succ, &vn.Vnode)
+	succList, err := vn.ring.transport.Notify(succ, &vn.Vnode)
 	if err != nil {
 		return err
 	}
 
 	// Trim the successors list if too long
-	max_succ := vn.ring.config.NumSuccessors
-	if len(succ_list) > max_succ-1 {
-		succ_list = succ_list[:max_succ-1]
+	maxSucc := vn.ring.config.NumSuccessors
+	if len(succList) > maxSucc-1 {
+		succList = succList[:maxSucc-1]
 	}
 
 	// Update local successors list
-	for idx, s := range succ_list {
+	for idx, s := range succList {
 		if s == nil {
 			break
 		}
@@ -167,17 +173,17 @@ func (vn *localVnode) notifySuccessor() error {
 }
 
 // RPC: Notify is invoked when a Vnode gets notified
-func (vn *localVnode) Notify(maybe_pred *Vnode) ([]*Vnode, error) {
+func (vn *localVnode) Notify(maybePred *Vnode) ([]*Vnode, error) {
 	// Check if we should update our predecessor
-	if vn.predecessor == nil || between(vn.predecessor.Id, vn.Id, maybe_pred.Id) {
+	if vn.predecessor == nil || between(vn.predecessor.ID, vn.ID, maybePred.ID) {
 		// Inform the delegate
 		conf := vn.ring.config
 		old := vn.predecessor
 		vn.ring.invokeDelegate(func() {
-			conf.Delegate.NewPredecessor(&vn.Vnode, maybe_pred, old)
+			conf.Delegate.NewPredecessor(&vn.Vnode, maybePred, old)
 		})
 
-		vn.predecessor = maybe_pred
+		vn.predecessor = maybePred
 	}
 
 	// Return our successors list
@@ -188,7 +194,7 @@ func (vn *localVnode) Notify(maybe_pred *Vnode) ([]*Vnode, error) {
 func (vn *localVnode) fixFingerTable() error {
 	// Determine the offset
 	hb := vn.ring.config.hashBits
-	offset := powerOffset(vn.Id, vn.last_finger, hb)
+	offset := powerOffset(vn.ID, vn.lastFinger, hb)
 
 	// Find the successor
 	nodes, err := vn.FindSuccessors(1, offset)
@@ -198,30 +204,30 @@ func (vn *localVnode) fixFingerTable() error {
 	node := nodes[0]
 
 	// Update the finger table
-	vn.finger[vn.last_finger] = node
+	vn.finger[vn.lastFinger] = node
 
 	// Try to skip as many finger entries as possible
 	for {
-		next := vn.last_finger + 1
+		next := vn.lastFinger + 1
 		if next >= hb {
 			break
 		}
-		offset := powerOffset(vn.Id, next, hb)
+		offset := powerOffset(vn.ID, next, hb)
 
 		// While the node is the successor, update the finger entries
-		if betweenRightIncl(vn.Id, node.Id, offset) {
+		if betweenRightIncl(vn.ID, node.ID, offset) {
 			vn.finger[next] = node
-			vn.last_finger = next
+			vn.lastFinger = next
 		} else {
 			break
 		}
 	}
 
 	// Increment to the index to repair
-	if vn.last_finger+1 == hb {
-		vn.last_finger = 0
+	if vn.lastFinger+1 == hb {
+		vn.lastFinger = 0
 	} else {
-		vn.last_finger++
+		vn.lastFinger++
 	}
 
 	return nil
@@ -247,7 +253,7 @@ func (vn *localVnode) checkPredecessor() error {
 // Finds next N successors. N must be <= NumSuccessors
 func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 	// Check if we are the immediate predecessor
-	if betweenRightIncl(vn.Id, vn.successors[0].Id, key) {
+	if betweenRightIncl(vn.ID, vn.successors[0].ID, key) {
 		return vn.successors[:n], nil
 	}
 
@@ -265,9 +271,8 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 		res, err := vn.ring.transport.FindSuccessors(closest, n, key)
 		if err == nil {
 			return res, nil
-		} else {
-			log.Printf("[ERR] Failed to contact %s. Got %s", closest.String(), err)
 		}
+		log.Printf("[ERR] Failed to contact %s. Got %s", closest.String(), err)
 	}
 
 	// Determine how many successors we know of
@@ -275,7 +280,7 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 
 	// Check if the ID is between us and any non-immediate successors
 	for i := 1; i <= successors-n; i++ {
-		if betweenRightIncl(vn.Id, vn.successors[i].Id, key) {
+		if betweenRightIncl(vn.ID, vn.successors[i].ID, key) {
 			remain := vn.successors[i:]
 			if len(remain) > n {
 				remain = remain[:n]
@@ -285,7 +290,7 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 	}
 
 	// Checked all closer nodes and our successors!
-	return nil, fmt.Errorf("Exhausted all preceeding nodes!")
+	return nil, errExhaustedProceedNodes
 }
 
 // Instructs the vnode to leave

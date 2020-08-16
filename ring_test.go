@@ -61,7 +61,7 @@ func TestRingInit(t *testing.T) {
 		if ring.vnodes[i].ring != ring {
 			t.Fatalf("ring missing!")
 		}
-		if ring.vnodes[i].Id == nil {
+		if ring.vnodes[i].ID == nil {
 			t.Fatalf("ID not initialized!")
 		}
 	}
@@ -77,27 +77,27 @@ func TestRingLen(t *testing.T) {
 func TestRingSort(t *testing.T) {
 	ring := makeRing()
 	sort.Sort(ring)
-	if bytes.Compare(ring.vnodes[0].Id, ring.vnodes[1].Id) != -1 {
+	if bytes.Compare(ring.vnodes[0].ID, ring.vnodes[1].ID) != -1 {
 		t.Fatalf("bad sort")
 	}
-	if bytes.Compare(ring.vnodes[1].Id, ring.vnodes[2].Id) != -1 {
+	if bytes.Compare(ring.vnodes[1].ID, ring.vnodes[2].ID) != -1 {
 		t.Fatalf("bad sort")
 	}
-	if bytes.Compare(ring.vnodes[2].Id, ring.vnodes[3].Id) != -1 {
+	if bytes.Compare(ring.vnodes[2].ID, ring.vnodes[3].ID) != -1 {
 		t.Fatalf("bad sort")
 	}
-	if bytes.Compare(ring.vnodes[3].Id, ring.vnodes[4].Id) != -1 {
+	if bytes.Compare(ring.vnodes[3].ID, ring.vnodes[4].ID) != -1 {
 		t.Fatalf("bad sort")
 	}
 }
 
 func TestRingNearest(t *testing.T) {
 	ring := makeRing()
-	ring.vnodes[0].Id = []byte{2}
-	ring.vnodes[1].Id = []byte{4}
-	ring.vnodes[2].Id = []byte{7}
-	ring.vnodes[3].Id = []byte{10}
-	ring.vnodes[4].Id = []byte{14}
+	ring.vnodes[0].ID = []byte{2}
+	ring.vnodes[1].ID = []byte{4}
+	ring.vnodes[2].ID = []byte{7}
+	ring.vnodes[3].ID = []byte{10}
+	ring.vnodes[4].ID = []byte{14}
 	key := []byte{6}
 
 	near := ring.nearestVnode(key)

@@ -24,7 +24,7 @@ func makeVnode() *localVnode {
 func TestVnodeInit(t *testing.T) {
 	vn := makeVnode()
 	vn.init(0)
-	if vn.Id == nil {
+	if vn.ID == nil {
 		t.Fatalf("unexpected nil")
 	}
 	if vn.successors == nil {
@@ -46,12 +46,12 @@ func TestVnodeSchedule(t *testing.T) {
 	}
 }
 
-func TestGenId(t *testing.T) {
+func TestGenID(t *testing.T) {
 	vn := makeVnode()
 	var ids [][]byte
 	for i := 0; i < 16; i++ {
-		vn.genId(uint16(i))
-		ids = append(ids, vn.Id)
+		vn.genID(uint16(i))
+		ids = append(ids, vn.ID)
 	}
 
 	for idx, val := range ids {
@@ -105,7 +105,7 @@ func TestVnodeKnownSucc(t *testing.T) {
 	if vn.knownSuccessors() != 0 {
 		t.Fatalf("wrong num known!")
 	}
-	vn.successors[0] = &Vnode{Id: []byte{1}}
+	vn.successors[0] = &Vnode{ID: []byte{1}}
 	if vn.knownSuccessors() != 1 {
 		t.Fatalf("wrong num known!")
 	}
@@ -151,10 +151,10 @@ func TestVnodeCheckNewSuccAlive(t *testing.T) {
 func TestVnodeCheckNewSuccDead(t *testing.T) {
 	vn1 := makeVnode()
 	vn1.init(1)
-	vn1.successors[0] = &Vnode{Id: []byte{0}}
+	vn1.successors[0] = &Vnode{ID: []byte{0}}
 
 	if err := vn1.checkNewSuccessor(); err == nil {
-		t.Fatalf("err!", err)
+		t.Fatalf("err: %v", err)
 	}
 
 	if vn1.successors[0].String() != "00" {
@@ -209,7 +209,8 @@ func TestVnodeCheckNewSuccAllDeadAlternates(t *testing.T) {
 	(r.transport.(*LocalTransport)).Deregister(&vn3.Vnode)
 
 	// Should get an error
-	if err := vn1.checkNewSuccessor(); err.Error() != "All known successors dead!" {
+	// if err := vn1.checkNewSuccessor(); err.Error() != "All known successors dead!" {
+	if err := vn1.checkNewSuccessor(); err != errAllKnownSuccDead {
 		t.Fatalf("unexpected err %s", err)
 	}
 
@@ -286,9 +287,9 @@ func TestVnodeNotifySucc(t *testing.T) {
 	r := makeRing()
 	sort.Sort(r)
 
-	s1 := &Vnode{Id: []byte{1}}
-	s2 := &Vnode{Id: []byte{2}}
-	s3 := &Vnode{Id: []byte{3}}
+	s1 := &Vnode{ID: []byte{1}}
+	s2 := &Vnode{ID: []byte{2}}
+	s3 := &Vnode{ID: []byte{3}}
 
 	vn1 := r.vnodes[0]
 	vn2 := r.vnodes[1]
@@ -343,9 +344,9 @@ func TestVnodeNotifySamePred(t *testing.T) {
 	r := makeRing()
 	sort.Sort(r)
 
-	s1 := &Vnode{Id: []byte{1}}
-	s2 := &Vnode{Id: []byte{2}}
-	s3 := &Vnode{Id: []byte{3}}
+	s1 := &Vnode{ID: []byte{1}}
+	s2 := &Vnode{ID: []byte{2}}
+	s3 := &Vnode{ID: []byte{3}}
 
 	vn1 := r.vnodes[0]
 	vn2 := r.vnodes[1]
@@ -377,9 +378,9 @@ func TestVnodeNotifyNoPred(t *testing.T) {
 	r := makeRing()
 	sort.Sort(r)
 
-	s1 := &Vnode{Id: []byte{1}}
-	s2 := &Vnode{Id: []byte{2}}
-	s3 := &Vnode{Id: []byte{3}}
+	s1 := &Vnode{ID: []byte{1}}
+	s2 := &Vnode{ID: []byte{2}}
+	s3 := &Vnode{ID: []byte{3}}
 
 	vn1 := r.vnodes[0]
 	vn2 := r.vnodes[1]
@@ -439,12 +440,12 @@ func TestVnodeFixFinger(t *testing.T) {
 	}
 
 	// Check we've progressed
-	if vn.last_finger != 158 {
-		t.Fatalf("unexpected last finger! %d", vn.last_finger)
+	if vn.lastFinger != 158 {
+		t.Fatalf("unexpected last finger! %d", vn.lastFinger)
 	}
 
 	// Ensure that we've setup our successor as the initial entries
-	for i := 0; i < vn.last_finger; i++ {
+	for i := 0; i < vn.lastFinger; i++ {
 		if vn.finger[i] != vn.successors[0] {
 			t.Fatalf("unexpected finger entry!")
 		}
@@ -454,8 +455,8 @@ func TestVnodeFixFinger(t *testing.T) {
 	if err := vn.fixFingerTable(); err != nil {
 		t.Fatalf("unexpected err, %s", err)
 	}
-	if vn.last_finger != 0 {
-		t.Fatalf("unexpected last finger! %d", vn.last_finger)
+	if vn.lastFinger != 0 {
+		t.Fatalf("unexpected last finger! %d", vn.lastFinger)
 	}
 }
 
@@ -613,14 +614,14 @@ func TestVnodeFindSuccessorsSomeDead(t *testing.T) {
 func TestVnodeClearPred(t *testing.T) {
 	v := makeVnode()
 	v.init(0)
-	p := &Vnode{Id: []byte{12}}
+	p := &Vnode{ID: []byte{12}}
 	v.predecessor = p
 	v.ClearPredecessor(p)
 	if v.predecessor != nil {
 		t.Fatalf("expect no predecessor!")
 	}
 
-	np := &Vnode{Id: []byte{14}}
+	np := &Vnode{ID: []byte{14}}
 	v.predecessor = p
 	v.ClearPredecessor(np)
 	if v.predecessor != p {
@@ -632,9 +633,9 @@ func TestVnodeSkipSucc(t *testing.T) {
 	v := makeVnode()
 	v.init(0)
 
-	s1 := &Vnode{Id: []byte{10}}
-	s2 := &Vnode{Id: []byte{11}}
-	s3 := &Vnode{Id: []byte{12}}
+	s1 := &Vnode{ID: []byte{10}}
+	s2 := &Vnode{ID: []byte{11}}
+	s3 := &Vnode{ID: []byte{12}}
 
 	v.successors[0] = s1
 	v.successors[1] = s2

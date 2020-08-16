@@ -21,7 +21,7 @@ type LocalTransport struct {
 	local  map[string]*localRPC
 }
 
-// Creates a local transport to wrap a remote transport
+// InitLocalTransport creates a local transport to wrap a remote transport
 func InitLocalTransport(remote Transport) Transport {
 	// Replace a nil transport with black hole
 	if remote == nil {
@@ -40,11 +40,11 @@ func (lt *LocalTransport) get(vn *Vnode) (VnodeRPC, bool) {
 	w, ok := lt.local[key]
 	if ok {
 		return w.obj, ok
-	} else {
-		return nil, ok
 	}
+	return nil, ok
 }
 
+// ListVnodes .
 func (lt *LocalTransport) ListVnodes(host string) ([]*Vnode, error) {
 	// Check if this is a local host
 	if host == lt.host {
@@ -65,6 +65,7 @@ func (lt *LocalTransport) ListVnodes(host string) ([]*Vnode, error) {
 	return lt.remote.ListVnodes(host)
 }
 
+// Ping .
 func (lt *LocalTransport) Ping(vn *Vnode) (bool, error) {
 	// Look for it locally
 	_, ok := lt.get(vn)
@@ -78,6 +79,7 @@ func (lt *LocalTransport) Ping(vn *Vnode) (bool, error) {
 	return lt.remote.Ping(vn)
 }
 
+// GetPredecessor satisifies the Transport interface
 func (lt *LocalTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
 	// Look for it locally
 	obj, ok := lt.get(vn)
@@ -91,6 +93,7 @@ func (lt *LocalTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
 	return lt.remote.GetPredecessor(vn)
 }
 
+// Notify satisifies the Transport interface
 func (lt *LocalTransport) Notify(vn, self *Vnode) ([]*Vnode, error) {
 	// Look for it locally
 	obj, ok := lt.get(vn)
@@ -104,6 +107,7 @@ func (lt *LocalTransport) Notify(vn, self *Vnode) ([]*Vnode, error) {
 	return lt.remote.Notify(vn, self)
 }
 
+// FindSuccessors satisifies the Transport interface
 func (lt *LocalTransport) FindSuccessors(vn *Vnode, n int, key []byte) ([]*Vnode, error) {
 	// Look for it locally
 	obj, ok := lt.get(vn)
@@ -117,6 +121,7 @@ func (lt *LocalTransport) FindSuccessors(vn *Vnode, n int, key []byte) ([]*Vnode
 	return lt.remote.FindSuccessors(vn, n, key)
 }
 
+// ClearPredecessor satisifies the Transport interface
 func (lt *LocalTransport) ClearPredecessor(target, self *Vnode) error {
 	// Look for it locally
 	obj, ok := lt.get(target)
@@ -130,6 +135,7 @@ func (lt *LocalTransport) ClearPredecessor(target, self *Vnode) error {
 	return lt.remote.ClearPredecessor(target, self)
 }
 
+// SkipSuccessor satisifies the Transport interface
 func (lt *LocalTransport) SkipSuccessor(target, self *Vnode) error {
 	// Look for it locally
 	obj, ok := lt.get(target)
@@ -143,6 +149,7 @@ func (lt *LocalTransport) SkipSuccessor(target, self *Vnode) error {
 	return lt.remote.SkipSuccessor(target, self)
 }
 
+// Register satisifies the Transport interface
 func (lt *LocalTransport) Register(v *Vnode, o VnodeRPC) {
 	// Register local instance
 	key := v.String()
@@ -155,6 +162,7 @@ func (lt *LocalTransport) Register(v *Vnode, o VnodeRPC) {
 	lt.remote.Register(v, o)
 }
 
+// Deregister ...
 func (lt *LocalTransport) Deregister(v *Vnode) {
 	key := v.String()
 	lt.lock.Lock()
@@ -162,38 +170,50 @@ func (lt *LocalTransport) Deregister(v *Vnode) {
 	lt.lock.Unlock()
 }
 
+var (
+	blackHoleConnectErrStr = "blackhole transport failed to connect: %s"
+)
+
 // BlackholeTransport is used to provide an implemenation of the Transport that
 // does not actually do anything. Any operation will result in an error.
 type BlackholeTransport struct {
 }
 
+// ListVnodes satisifies the Transport interface
 func (*BlackholeTransport) ListVnodes(host string) ([]*Vnode, error) {
-	return nil, fmt.Errorf("Failed to connect! Blackhole: %s.", host)
+	return nil, fmt.Errorf(blackHoleConnectErrStr, host)
 }
 
+// Ping satisifies the Transport interface
 func (*BlackholeTransport) Ping(vn *Vnode) (bool, error) {
 	return false, nil
 }
 
+// GetPredecessor atisifies the Transport interface
 func (*BlackholeTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
-	return nil, fmt.Errorf("Failed to connect! Blackhole: %s.", vn.String())
+	return nil, fmt.Errorf(blackHoleConnectErrStr, vn.String())
 }
 
+// Notify satisifies the Transport interface
 func (*BlackholeTransport) Notify(vn, self *Vnode) ([]*Vnode, error) {
-	return nil, fmt.Errorf("Failed to connect! Blackhole: %s", vn.String())
+	return nil, fmt.Errorf(blackHoleConnectErrStr, vn.String())
 }
 
+// FindSuccessors satisifies the Transport interface
 func (*BlackholeTransport) FindSuccessors(vn *Vnode, n int, key []byte) ([]*Vnode, error) {
-	return nil, fmt.Errorf("Failed to connect! Blackhole: %s", vn.String())
+	return nil, fmt.Errorf(blackHoleConnectErrStr, vn.String())
 }
 
+// ClearPredecessor satisifies the Transport interface
 func (*BlackholeTransport) ClearPredecessor(target, self *Vnode) error {
-	return fmt.Errorf("Failed to connect! Blackhole: %s", target.String())
+	return fmt.Errorf(blackHoleConnectErrStr, target.String())
 }
 
+// SkipSuccessor satisifies the Transport interface
 func (*BlackholeTransport) SkipSuccessor(target, self *Vnode) error {
-	return fmt.Errorf("Failed to connect! Blackhole: %s", target.String())
+	return fmt.Errorf(blackHoleConnectErrStr, target.String())
 }
 
+// Register satisifies the Transport interface
 func (*BlackholeTransport) Register(v *Vnode, o VnodeRPC) {
 }

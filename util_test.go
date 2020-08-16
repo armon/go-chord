@@ -29,7 +29,7 @@ func TestRandStabilize(t *testing.T) {
 	for idx, val := range times {
 		for i := 0; i < len(times); i++ {
 			if idx != i && times[i] == val {
-				collisions += 1
+				collisions++
 			}
 		}
 	}
@@ -129,22 +129,22 @@ func TestMin(t *testing.T) {
 
 func TestNearestVnodesKey(t *testing.T) {
 	vnodes := make([]*Vnode, 5)
-	vnodes[0] = &Vnode{Id: []byte{2}}
-	vnodes[1] = &Vnode{Id: []byte{4}}
-	vnodes[2] = &Vnode{Id: []byte{7}}
-	vnodes[3] = &Vnode{Id: []byte{10}}
-	vnodes[4] = &Vnode{Id: []byte{14}}
+	vnodes[0] = &Vnode{ID: []byte{2}}
+	vnodes[1] = &Vnode{ID: []byte{4}}
+	vnodes[2] = &Vnode{ID: []byte{7}}
+	vnodes[3] = &Vnode{ID: []byte{10}}
+	vnodes[4] = &Vnode{ID: []byte{14}}
 	key := []byte{6}
 
 	near := nearestVnodeToKey(vnodes, key)
 	if near != vnodes[1] {
-		t.Fatalf("got wrong node back!")
+		t.Fatal("got wrong node back")
 	}
 
 	key = []byte{0}
 	near = nearestVnodeToKey(vnodes, key)
 	if near != vnodes[4] {
-		t.Fatalf("got wrong node back!")
+		t.Fatal("got wrong node back")
 	}
 }
 

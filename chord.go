@@ -1,7 +1,4 @@
-/*
-This package is used to provide an implementation of the
-Chord network protocol.
-*/
+// Package chord provides an implementation of the Chord network protocol.
 package chord
 
 import (
@@ -11,7 +8,7 @@ import (
 	"time"
 )
 
-// Implements the methods needed for a Chord ring
+// Transport mplements the methods needed for a Chord ring
 type Transport interface {
 	// Gets a list of the vnodes on the box
 	ListVnodes(string) ([]*Vnode, error)
@@ -38,7 +35,7 @@ type Transport interface {
 	Register(*Vnode, VnodeRPC)
 }
 
-// These are the methods to invoke on the registered vnodes
+// VnodeRPC implements methods to invoke on the registered vnodes
 type VnodeRPC interface {
 	GetPredecessor() (*Vnode, error)
 	Notify(*Vnode) ([]*Vnode, error)
@@ -56,7 +53,7 @@ type Delegate interface {
 	Shutdown()
 }
 
-// Configuration for Chord nodes
+// Config holds the configuration for Chord nodes
 type Config struct {
 	Hostname      string           // Local host name
 	NumVnodes     int              // Number of vnodes per physical node
@@ -68,9 +65,9 @@ type Config struct {
 	hashBits      int              // Bit size of the hash function
 }
 
-// Represents an Vnode, local or remote
+// Vnode epresents an Vnode, local or remote
 type Vnode struct {
-	Id   []byte // Virtual ID
+	ID   []byte // Virtual ID
 	Host string // Host identifier
 }
 
@@ -80,13 +77,13 @@ type localVnode struct {
 	ring        *Ring
 	successors  []*Vnode
 	finger      []*Vnode
-	last_finger int
+	lastFinger  int
 	predecessor *Vnode
 	stabilized  time.Time
 	timer       *time.Timer
 }
 
-// Stores the state required for a Chord ring
+// Ring stores the state required for a Chord ring
 type Ring struct {
 	config     *Config
 	transport  Transport
@@ -95,7 +92,7 @@ type Ring struct {
 	shutdown   chan bool
 }
 
-// Returns the default Ring configuration
+// DefaultConfig returns the default Ring configuration
 func DefaultConfig(hostname string) *Config {
 	return &Config{
 		hostname,
@@ -109,7 +106,7 @@ func DefaultConfig(hostname string) *Config {
 	}
 }
 
-// Creates a new Chord ring given the config and transport
+// Create creates a new Chord ring given the config and transport
 func Create(conf *Config, trans Transport) (*Ring, error) {
 	// Initialize the hash bits
 	conf.hashBits = conf.HashFunc().Size() * 8
@@ -122,7 +119,7 @@ func Create(conf *Config, trans Transport) (*Ring, error) {
 	return ring, nil
 }
 
-// Joins an existing Chord ring
+// Join joins an existing Chord ring
 func Join(conf *Config, trans Transport, existing string) (*Ring, error) {
 	// Initialize the hash bits
 	conf.hashBits = conf.HashFunc().Size() * 8
@@ -133,7 +130,7 @@ func Join(conf *Config, trans Transport, existing string) (*Ring, error) {
 		return nil, err
 	}
 	if hosts == nil || len(hosts) == 0 {
-		return nil, fmt.Errorf("Remote host has no vnodes!")
+		return nil, fmt.Errorf("remote host has no vnodes")
 	}
 
 	// Create a ring
@@ -143,15 +140,15 @@ func Join(conf *Config, trans Transport, existing string) (*Ring, error) {
 	// Acquire a live successor for each Vnode
 	for _, vn := range ring.vnodes {
 		// Get the nearest remote vnode
-		nearest := nearestVnodeToKey(hosts, vn.Id)
+		nearest := nearestVnodeToKey(hosts, vn.ID)
 
 		// Query for a list of successors to this Vnode
-		succs, err := trans.FindSuccessors(nearest, conf.NumSuccessors, vn.Id)
+		succs, err := trans.FindSuccessors(nearest, conf.NumSuccessors, vn.ID)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to find successor for vnodes! Got %s", err)
+			return nil, fmt.Errorf("failed to find successor for vnodes: %v", err)
 		}
 		if succs == nil || len(succs) == 0 {
-			return nil, fmt.Errorf("Failed to find successor for vnodes! Got no vnodes!")
+			return nil, fmt.Errorf("failed to find successor for vnodes")
 		}
 
 		// Assign the successors
@@ -172,7 +169,7 @@ func Join(conf *Config, trans Transport, existing string) (*Ring, error) {
 	return ring, nil
 }
 
-// Leaves a given Chord ring and shuts down the local vnodes
+// Leave leaves a given Chord ring and shuts down the local vnodes
 func (r *Ring) Leave() error {
 	// Shutdown the vnodes first to avoid further stabilization runs
 	r.stopVnodes()
@@ -195,23 +192,23 @@ func (r *Ring) Shutdown() {
 	r.stopDelegate()
 }
 
-// Does a key lookup for up to N successors of a key
+// Lookup does a key lookup for up to N successors of a key
 func (r *Ring) Lookup(n int, key []byte) ([]*Vnode, error) {
 	// Ensure that n is sane
 	if n > r.config.NumSuccessors {
-		return nil, fmt.Errorf("Cannot ask for more successors than NumSuccessors!")
+		return nil, fmt.Errorf("cannot ask for more successors than configured")
 	}
 
 	// Hash the key
 	h := r.config.HashFunc()
 	h.Write(key)
-	key_hash := h.Sum(nil)
+	keyHash := h.Sum(nil)
 
 	// Find the nearest local vnode
-	nearest := r.nearestVnode(key_hash)
+	nearest := r.nearestVnode(keyHash)
 
 	// Use the nearest node for the lookup
-	successors, err := nearest.FindSuccessors(n, key_hash)
+	successors, err := nearest.FindSuccessors(n, keyHash)
 	if err != nil {
 		return nil, err
 	}
